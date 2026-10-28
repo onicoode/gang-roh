@@ -1,0 +1,83 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world.gd" id="1_script"]
+[ext_resource type="Shader" path="res://shaders/sky.gdshader" id="2_sky"]
+[ext_resource type="Texture2D" path="res://sprites/city_far.png" id="3_far"]
+[ext_resource type="Texture2D" path="res://sprites/city_mid.png" id="4_mid"]
+[ext_resource type="Texture2D" path="res://sprites/street.png" id="5_street"]
+[ext_resource type="Texture2D" path="res://sprites/shrine.png" id="6_shrine"]
+[ext_resource type="PackedScene" path="res://scenes/cat.tscn" id="7_cat"]
+[ext_resource type="Texture2D" path="res://sprites/cloud.png" id="8_cloud"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
+shader = ExtResource("2_sky")
+
+[node name="World" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="SkyLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="Sky" type="ColorRect" parent="SkyLayer"]
+material = SubResource("ShaderMaterial_sky")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Tinted" type="Node2D" parent="."]
+
+[node name="Clouds" type="Node2D" parent="Tinted"]
+
+[node name="Cloud1" type="Sprite2D" parent="Tinted/Clouds"]
+position = Vector2(60, -150)
+texture = ExtResource("8_cloud")
+hframes = 2
+
+[node name="Cloud2" type="Sprite2D" parent="Tinted/Clouds"]
+position = Vector2(260, -110)
+texture = ExtResource("8_cloud")
+hframes = 2
+frame = 1
+
+[node name="Cloud3" type="Sprite2D" parent="Tinted/Clouds"]
+position = Vector2(450, -190)
+texture = ExtResource("8_cloud")
+hframes = 2
+
+[node name="CityFar" type="Sprite2D" parent="Tinted"]
+texture_repeat = 2
+position = Vector2(-1000, -70)
+texture = ExtResource("3_far")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 3200, 70)
+
+[node name="CityMid" type="Sprite2D" parent="Tinted"]
+texture_repeat = 2
+position = Vector2(-1000, -60)
+texture = ExtResource("4_mid")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 3200, 60)
+
+[node name="Street" type="Sprite2D" parent="Tinted"]
+texture_repeat = 2
+texture = ExtResource("5_street")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 544, 40)
+
+[node name="Shrine" type="Sprite2D" parent="Tinted"]
+texture = ExtResource("6_shrine")
+offset = Vector2(0, -15)
+
+[node name="Buildings" type="Node2D" parent="Tinted"]
+
+[node name="Coins" type="Node2D" parent="Tinted"]
+
+[node name="Player" parent="Tinted" instance=ExtResource("7_cat")]
+
+[node name="Lights" type="Node2D" parent="."]

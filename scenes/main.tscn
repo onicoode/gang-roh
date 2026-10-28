@@ -1,0 +1,129 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/world.tscn" id="2_world"]
+[ext_resource type="Texture2D" path="res://sprites/btn_left.png" id="3_left"]
+[ext_resource type="Texture2D" path="res://sprites/btn_right.png" id="4_right"]
+[ext_resource type="Texture2D" path="res://sprites/btn_up.png" id="5_up"]
+[ext_resource type="Texture2D" path="res://sprites/btn_down.png" id="6_down"]
+[ext_resource type="Texture2D" path="res://sprites/btn_action.png" id="7_action"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="GameView" type="SubViewportContainer" parent="."]
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stretch = true
+stretch_shrink = 4
+
+[node name="SubViewport" type="SubViewport" parent="GameView"]
+handle_input_locally = false
+snap_2d_transforms_to_pixel = true
+snap_2d_vertices_to_pixel = true
+canvas_item_default_texture_filter = 0
+size = Vector2i(320, 180)
+render_target_update_mode = 4
+
+[node name="World" parent="GameView/SubViewport" instance=ExtResource("2_world")]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Month" type="Label" parent="UI"]
+offset_right = 600.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(1, 0.97, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.13, 0.18, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 26
+
+[node name="Coins" type="Label" parent="UI"]
+offset_right = 400.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(1, 0.86, 0.4, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.13, 0.18, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 26
+
+[node name="Message" type="Label" parent="UI"]
+offset_right = 1248.0
+offset_bottom = 80.0
+theme_override_colors/font_color = Color(1, 0.95, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0.16, 0.13, 0.18, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="BtnLeft" type="TouchScreenButton" parent="UI"]
+scale = Vector2(4, 4)
+texture_normal = ExtResource("3_left")
+passby_press = true
+action = "move_left"
+visibility_mode = 1
+
+[node name="BtnRight" type="TouchScreenButton" parent="UI"]
+scale = Vector2(4, 4)
+texture_normal = ExtResource("4_right")
+passby_press = true
+action = "move_right"
+visibility_mode = 1
+
+[node name="BtnUp" type="TouchScreenButton" parent="UI"]
+scale = Vector2(4, 4)
+texture_normal = ExtResource("5_up")
+action = "move_up"
+visibility_mode = 1
+
+[node name="BtnDown" type="TouchScreenButton" parent="UI"]
+scale = Vector2(4, 4)
+texture_normal = ExtResource("6_down")
+action = "move_down"
+visibility_mode = 1
+
+[node name="BtnAction" type="TouchScreenButton" parent="UI"]
+scale = Vector2(4, 4)
+texture_normal = ExtResource("7_action")
+action = "action"
+visibility_mode = 1
+
+[node name="EndPanel" type="PanelContainer" parent="UI"]
+custom_minimum_size = Vector2(560, 320)
+offset_right = 560.0
+offset_bottom = 320.0
+
+[node name="VBox" type="VBoxContainer" parent="UI/EndPanel"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="UI/EndPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text = "Satu tahun berlalu..."
+horizontal_alignment = 1
+
+[node name="Summary" type="Label" parent="UI/EndPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+
+[node name="Restart" type="Button" parent="UI/EndPanel/VBox"]
+custom_minimum_size = Vector2(240, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 26
+text = "Main lagi"

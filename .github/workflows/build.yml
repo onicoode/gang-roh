@@ -1,0 +1,92 @@
+# Setiap push ke main: cek error script, build versi Web + APK Android,
+# lalu terbitkan ke GitHub Pages (main di browser HP, APK bisa diunduh di /gang-roh.apk).
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pasang Godot + export templates
+        run: |
+          set -e
+          V=${GODOT_VERSION}
+          URL=https://github.com/godotengine/godot/releases/download/${V}-stable
+          wget -q $URL/Godot_v${V}-stable_linux.x86_64.zip
+          unzip -q Godot_v${V}-stable_linux.x86_64.zip
+          sudo mv Godot_v${V}-stable_linux.x86_64 /usr/local/bin/godot
+          wget -q $URL/Godot_v${V}-stable_export_templates.tpz
+          unzip -q Godot_v${V}-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/${V}.stable
+          mv templates/* ~/.local/share/godot/export_templates/${V}.stable/
+
+      - name: Import proyek
+        run: godot --headless --import || true
+
+      - name: Cek error script (smoke test)
+        run: |
+          godot --headless --quit-after 300 -- --demo 2>&1 | tee run.log
+          if grep -E "SCRIPT ERROR|Parse Error" run.log; then
+            echo "::error::Ada error script, lihat log di atas"
+            exit 1
+          fi
+
+      - name: Export Web
+        run: |
+          mkdir -p build/web
+          godot --headless --export-release "Web" build/web/index.html
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Export APK Android (debug)
+        continue-on-error: true
+        run: |
+          set -e
+          keytool -genkeypair -keystore debug.keystore -storepass android -alias androiddebugkey \
+            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$PWD/debug.keystore
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
+          mkdir -p ~/.config/godot
+          for f in editor_settings-4.tres editor_settings-4.7.tres; do
+            printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/android_sdk_path = "%s"\nexport/android/java_sdk_path = "%s"\n' \
+              "$ANDROID_HOME" "$JAVA_HOME" > ~/.config/godot/$f
+          done
+          mkdir -p build/android
+          godot --headless --export-debug "Android" build/android/gang-roh.apk
+          cp build/android/gang-roh.apk build/web/gang-roh.apk
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
