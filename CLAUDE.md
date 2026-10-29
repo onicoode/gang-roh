@@ -10,6 +10,7 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 
 ## Alur kerja
 - Repo: github.com/onicoode/gang-roh (publik). Folder lokal di PC: `D:\CodeProject\Sandbox\gang-roh`.
+- **Kerjakan langsung di `main`** (permintaan pemilik): jangan buat branch/PR baru kecuali diminta.
 - Push ke `main` → GitHub Actions (`.github/workflows/build.yml`): smoke test script, export Web + APK,
   deploy ke GitHub Pages: https://onicoode.github.io/gang-roh/ (APK: /gang-roh.apk).
 - Sesi cloud (dari HP) tidak punya Godot: andalkan CI untuk cek error. Setelah push, cek hasil Actions.
