@@ -1,9 +1,12 @@
 # Setiap push ke main: cek error script, build versi Web + APK Android,
 # lalu terbitkan ke GitHub Pages (main di browser HP, APK bisa diunduh di /gang-roh.apk).
+# Setiap PR ke main: hanya cek error + build (tidak diterbitkan).
 name: Build & Deploy
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -13,7 +16,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -44,7 +47,9 @@ jobs:
       - name: Cek error script (smoke test)
         run: |
           godot --headless --quit-after 300 -- --demo 2>&1 | tee run.log
-          if grep -E "SCRIPT ERROR|Parse Error" run.log; then
+          # malam bulan 8, dipercepat: developer dari dua ujung ikut teruji
+          godot --headless --fixed-fps 60 --quit-after 600 -- --demo --month=8 --time=0.71 --speed=10 2>&1 | tee -a run.log
+          if grep -E "SCRIPT ERROR|Parse Error|Invalid call|Invalid access|Invalid assignment" run.log; then
             echo "::error::Ada error script, lihat log di atas"
             exit 1
           fi
@@ -82,6 +87,7 @@ jobs:
           path: build/web
 
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:

@@ -9,7 +9,17 @@ gang tumbuh dari warung satu lantai menjadi deretan gedung bertingkat.
 1. Siang: toko menghasilkan koin, kuil menerima persembahan.
 2. Pungut koin (kantong terbatas), jalan kiri-kanan, naik tangga ke atap.
 3. Tanam koin di titik bangun → perancah → lantai baru di awal bulan berikutnya.
-4. Malam: tantangan datang (belum di prototipe).
+4. Malam: developer rakus datang (mulai bulan 2).
+
+## Developer & bangunan menua (v0.2)
+- Sore muncul firasat: developer datang dari ujung kiri/kanan (mulai bulan 7: dua ujung).
+- Malam developer masuk, mengincar petak terdekat yang kosong atau bobrok → pasang papan DIJUAL.
+  Kalau papan masih ada saat dia datang lagi → petak digusur (pagar seng). 4 petak digusur = kalah.
+- Lawan: pagar bambu di ujung gang (tiap koin +1, maks 4; didorong −1 tiap 7 dtk),
+  uang rokok (2 + bulan/3 koin, dia pergi malam itu), cabut papan (3 koin), rebut petak (10 koin).
+- Bangunan menua tiap bulan (makin tinggi makin cepat). Kusam (<60): koin toko lebih jarang, lampu redup.
+  Bobrok (<30): toko & sewa berhenti, jadi incaran developer; kondisi 0 → penghuni lantai atas pindah.
+  Rawat: tanam koin di depan pintu atau dari atap (+25 per koin).
 
 ## Kontrol
 Kiri/kanan, atas/bawah (tangga), satu tombol aksi. Di HP: swipe ke arah tujuan lalu tahan (di mana saja kecuali UI), sentuh-tahan di tempat/ketuk = aksi; mendukung portrait dan landscape.
@@ -42,7 +52,7 @@ Mata uang **Ema** (papan doa) dari hasil sesi.
 
 ## Roadmap
 1. ✅ v0.1 inti: jalan, tangga, koin, bangun, siang/malam, kontrol HP.
-2. Developer rakus + bangunan menua.
+2. ✅ Developer rakus + bangunan menua.
 3. Menu: pilih roh & panjang sesi; layar akhir + Ema.
 4. Upgrade permanen + simpan data.
 5. Tanuki & Komainu, bencana, suara, polish.

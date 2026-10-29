@@ -1,6 +1,7 @@
 extends Node2D
 ## Maneki-neko, roh penjaga gang.
-## Kiri/kanan: jalan. Atas/bawah: naik/turun tangga. Aksi (tahan): tanam koin.
+## Kiri/kanan: jalan. Atas/bawah: naik/turun tangga. Aksi (tahan): tanam koin
+## (bangun, rawat bangunan, cabut papan DIJUAL, perkuat pagar, uang rokok developer).
 ## Aksi di depan toko: "Lambaian Rezeki" (koin bonus, ada jeda).
 
 enum State { GROUND, CLIMB, ROOF }
@@ -109,6 +110,7 @@ func _try_wave() -> void:
 		_wave_cd = WAVE_COOLDOWN
 		_wave_t = 0.8
 		shop.lucky_wave()
+		world.sfx.play("wave")
 		world.say("Lambaian Rezeki!")
 
 

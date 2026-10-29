@@ -1,6 +1,8 @@
 extends Node2D
 ## Gang: deretan petak bangunan, kuil kecil, koin, dan siklus hari.
 ## 1 hari di game = 1 bulan bagi manusia. Sesi pendek = 12 bulan.
+## Mulai bulan 2, developer rakus datang tiap malam (firasat muncul sore hari).
+## Kalah kalau developer menguasai LOSE_PLOTS petak (kuil ikut tergusur).
 
 signal message(text: String)
 signal session_ended
@@ -12,9 +14,17 @@ const SHRINE_PLOT := 3
 const START_SHOP_PLOT := 2
 const MONTHS := 12
 const DAY_LENGTH := 120.0 # detik nyata per bulan
+const LOSE_PLOTS := 4
+const WARN_T := 0.55 # sore: firasat developer
+const DEV_T := 0.72 # malam: developer datang
+const BOTH_SIDES_MONTH := 7 # mulai bulan ini developer datang dari dua ujung
 
 const BuildingScene := preload("res://scenes/building.tscn")
 const CoinScene := preload("res://scenes/coin.tscn")
+const Building := preload("res://scripts/building.gd")
+const DevScript := preload("res://scripts/developer.gd")
+const GateScript := preload("res://scripts/gate.gd")
+const SfxScript := preload("res://scripts/sfx.gd")
 
 # Warna langit sepanjang hari (0 = pagi, 1 = pagi berikutnya)
 const TIME_KEYS := [0.0, 0.3, 0.62, 0.75, 0.9, 1.0]
@@ -28,6 +38,19 @@ var buildings: Array = []
 var month := 1
 var day_t := 0.0
 var ended := false
+var lost := false
+var gates: Array = [] # [kiri, kanan]
+var sfx: Node
+
+var _focus: Node = null # target koin yang lingkarannya sedang ditampilkan
+var _dev_warned := false
+var _dev_spawned := false
+var _dev_sides: Array[int] = []
+var _shake := 0.0
+var _cam: Camera2D
+var _actors: Node2D
+var _devs: Node2D
+var _fx: Node2D
 
 @onready var sky: ColorRect = $SkyLayer/Sky
 @onready var tinted: Node2D = $Tinted
@@ -43,6 +66,22 @@ var ended := false
 
 
 func _ready() -> void:
+	sfx = SfxScript.new()
+	add_child(sfx)
+	_actors = Node2D.new()
+	tinted.add_child(_actors)
+	tinted.move_child(_actors, player.get_index())
+	_devs = Node2D.new()
+	_actors.add_child(_devs)
+	_fx = Node2D.new()
+	add_child(_fx)
+	for side in [-1, 1]:
+		var g = GateScript.new()
+		g.world = self
+		g.position = Vector2(MARGIN / 2.0 if side < 0 else world_w - MARGIN / 2.0, 0)
+		_actors.add_child(g)
+		gates.append(g)
+
 	street.region_rect = Rect2(0, 0, world_w, 40)
 	shrine.position = Vector2(MARGIN + SHRINE_PLOT * PLOT_W + PLOT_W / 2.0, 0)
 
@@ -60,11 +99,11 @@ func _ready() -> void:
 
 	player.world = self
 	player.position = Vector2(shrine.position.x + 14, 0)
-	var cam: Camera2D = player.get_node("Camera2D")
-	cam.limit_left = 0
-	cam.limit_right = world_w
-	cam.limit_bottom = 40
-	cam.limit_top = -480
+	_cam = player.get_node("Camera2D")
+	_cam.limit_left = 0
+	_cam.limit_right = world_w
+	_cam.limit_bottom = 40
+	_cam.limit_top = -480
 
 	_apply_debug_args()
 	_shrine_offering()
@@ -78,6 +117,11 @@ func _process(delta: float) -> void:
 	if day_t >= 1.0:
 		day_t -= 1.0
 		_new_month()
+		if ended:
+			return
+	_update_developers()
+	_update_focus()
+	_update_shake(delta)
 	_apply_time()
 	_update_parallax(delta)
 
@@ -112,16 +156,99 @@ func shop_near(x: float) -> Node:
 	return null
 
 
-## Bangunan yang titik bangunnya sedang didekati kucing (tanah kosong atau atap).
+## Benda yang bisa menerima koin di dekat kucing: developer (uang rokok), pagar,
+## atau bangunan (bangun / rawat / cabut papan / rebut petak).
 func build_target(cat: Node2D) -> Node:
+	var on_ground: bool = cat.state == cat.State.GROUND
+	var on_roof: bool = cat.state == cat.State.ROOF
+	if on_ground:
+		for d in _devs.get_children():
+			if d.can_take_coin() and absf(cat.position.x - d.position.x) < 14.0:
+				return d
+		for g in gates:
+			if g.can_take_coin() and absf(cat.position.x - g.position.x) < 14.0:
+				return g
 	for b in buildings:
-		if not b.can_build_more():
-			continue
-		if b.floors == 0 and cat.state == cat.State.GROUND and absf(cat.position.x - b.center_x()) < 18.0:
-			return b
-		if b.floors > 0 and cat.state == cat.State.ROOF and cat.roof_building == b:
+		var j: int = Building.Job.NONE
+		if on_ground and absf(cat.position.x - b.center_x()) < 18.0:
+			j = b.job_for(false)
+		elif on_roof and cat.roof_building == b:
+			j = b.job_for(true)
+		if j != Building.Job.NONE:
+			b.set_job(j, on_roof)
 			return b
 	return null
+
+
+# ---------------------------------------------------------------- developer
+
+func dev_count() -> int:
+	return _devs.get_child_count()
+
+
+func dev_wants(b: Node) -> bool:
+	return b.signed or b.vulnerable()
+
+
+## Petak incaran terdekat di depan developer (searah jalannya).
+func dev_next_target(x: float, dir: int) -> Node:
+	var best: Node = null
+	var best_d := INF
+	for b in buildings:
+		var ahead: float = (b.center_x() - x) * dir
+		if ahead >= -1.0 and ahead < best_d and dev_wants(b):
+			best = b
+			best_d = ahead
+	return best
+
+
+func dev_claim(b: Node) -> void:
+	if ended:
+		return
+	if b.signed:
+		b.evict()
+		sfx.play("evict")
+		shake(2.5)
+		var n := owned_count()
+		say("Petak digusur! Developer menguasai %d / %d petak." % [n, LOSE_PLOTS])
+		if n >= LOSE_PLOTS:
+			_lose()
+	else:
+		b.put_sign()
+		sfx.play("alert")
+		say("Papan DIJUAL dipasang! Cabut (3 koin) sebelum developer kembali.")
+
+
+func owned_count() -> int:
+	var n := 0
+	for b in buildings:
+		if b.owned:
+			n += 1
+	return n
+
+
+# ---------------------------------------------------------------- efek
+
+func shake(amount: float) -> void:
+	_shake = maxf(_shake, amount)
+
+
+func pop_text(pos: Vector2, text: String, color: Color = Color.WHITE) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 8)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_outline_color", Color(0.16, 0.13, 0.18))
+	l.add_theme_constant_override("outline_size", 3)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.size = Vector2(60, 12)
+	l.position = pos - Vector2(30, 8)
+	_fx.add_child(l)
+	var tw := l.create_tween()
+	tw.tween_property(l, "position:y", l.position.y - 12.0, 0.8)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.5).set_delay(0.3)
+	tw.tween_callback(l.queue_free)
 
 
 func say(text: String) -> void:
@@ -147,7 +274,12 @@ func summary() -> String:
 		if b.floors > 0:
 			shops += 1
 		tallest = maxi(tallest, b.floors)
-	return "Toko berdiri: %d\nTotal lantai: %d\nGedung tertinggi: %d lantai" % [shops, total, tallest]
+	var ruined := 0
+	for b in buildings:
+		if b.floors > 0 and b.condition < Building.RUIN:
+			ruined += 1
+	return "Toko berdiri: %d\nTotal lantai: %d\nGedung tertinggi: %d lantai\nBangunan bobrok: %d\nPetak digusur: %d" % [
+		shops, total, tallest, ruined, owned_count()]
 
 
 # ---------------------------------------------------------------- waktu
@@ -158,9 +290,68 @@ func _new_month() -> void:
 		session_ended.emit()
 		return
 	month += 1
+	_dev_warned = false
+	_dev_spawned = false
+	for d in _devs.get_children():
+		d.leave() # pagi: developer pulang
 	for b in buildings:
 		b.on_new_month()
 	_shrine_offering()
+
+
+func _lose() -> void:
+	ended = true
+	lost = true
+	session_ended.emit()
+
+
+func _update_developers() -> void:
+	if day_t >= WARN_T and not _dev_warned:
+		_dev_warned = true
+		_dev_sides.clear()
+		if month == 1:
+			say("Mulai bulan depan developer rakus datang tiap malam. Pasang pagar di ujung gang!")
+			return
+		if month >= BOTH_SIDES_MONTH:
+			_dev_sides.append(-1)
+			_dev_sides.append(1)
+		else:
+			_dev_sides.append(-1 if randf() < 0.5 else 1)
+		var where: String = "kedua ujung"
+		if _dev_sides.size() == 1:
+			where = "ujung kiri" if _dev_sides[0] < 0 else "ujung kanan"
+		say("Firasat: orang berjas mengintai dari %s gang..." % where)
+		sfx.play("alert")
+	if day_t >= DEV_T and not _dev_spawned:
+		_dev_spawned = true
+		for side in _dev_sides:
+			var d = DevScript.new()
+			d.world = self
+			d.dir = 1 if side < 0 else -1
+			d.gate = gates[0] if side < 0 else gates[1]
+			d.bribe_cost = 2 + int(month / 3.0)
+			d.position = Vector2(-8.0 if side < 0 else world_w + 8.0, 0)
+			_devs.add_child(d)
+		if not _dev_sides.is_empty():
+			say("Developer datang!")
+
+
+func _update_focus() -> void:
+	var t: Node = build_target(player)
+	if t == _focus:
+		return
+	if is_instance_valid(_focus):
+		_focus.show_slots = false
+	_focus = t
+	if t != null:
+		t.show_slots = true
+
+
+func _update_shake(delta: float) -> void:
+	if _shake <= 0.0:
+		return
+	_shake = maxf(_shake - delta * 5.0, 0.0)
+	_cam.offset = Vector2(roundf(randf_range(-_shake, _shake)), roundf(randf_range(-_shake, _shake)))
 
 
 func _shrine_offering() -> void:
@@ -185,8 +376,7 @@ func _apply_time() -> void:
 
 
 func _update_parallax(delta: float) -> void:
-	var cam: Camera2D = player.get_node("Camera2D")
-	var cam_x := cam.get_screen_center_position().x
+	var cam_x := _cam.get_screen_center_position().x
 	city_far.position.x = cam_x * 0.7 - 1000.0
 	city_mid.position.x = cam_x * 0.45 - 1000.0
 	for c in clouds.get_children():
@@ -204,5 +394,17 @@ func _apply_debug_args() -> void:
 				buildings[i].floors = f[i % f.size()]
 				buildings[i].rebuild()
 			player.coins = 8
+			var cond := [100.0, 50.0, 20.0, 80.0, 40.0, 100.0, 25.0]
+			for i in buildings.size():
+				buildings[i].condition = cond[i % cond.size()]
+				buildings[i].rebuild()
+			buildings[1].signed = true
+			buildings[1].rebuild()
+			gates[0].hp = 2
+			gates[0].queue_redraw()
 		elif arg.begins_with("--time="):
 			day_t = float(arg.substr(7))
+		elif arg.begins_with("--month="):
+			month = clampi(int(arg.substr(8)), 1, MONTHS)
+		elif arg.begins_with("--speed="):
+			Engine.time_scale = float(arg.substr(8))
