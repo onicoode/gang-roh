@@ -23,7 +23,8 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 ## Struktur
 | Path | Isi |
 |---|---|
-| `scenes/main.tscn` + `scripts/main.gd` | SubViewport pixel-perfect (sisi terpendek ≈180 px game), HUD, tombol sentuh, panel akhir sesi |
+| `scenes/main.tscn` + `scripts/main.gd` | SubViewport pixel-perfect (sisi terpendek ≈180 px game), HUD, panel akhir sesi |
+| `scripts/swipe_input.gd` | Kontrol sentuh tak terlihat: swipe+tahan = gerak, sentuh diam/ketuk = aksi (`_unhandled_input`, UI makan sentuhan dulu) |
 | `scenes/world.tscn` + `scripts/world.gd` | Gang: petak, kuil, siklus hari/bulan, warna langit, parallax, spawn koin |
 | `scripts/building.gd` | Satu petak: lantai, biaya, konstruksi, sprite toko/apartemen/atap/tangga, slot koin |
 | `scripts/cat.gd` | Pemain: state GROUND/CLIMB/ROOF, tanam koin (tahan aksi), Lambaian Rezeki |
@@ -41,5 +42,5 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 
 ## Status (update di akhir tiap sesi)
 - v0.1 prototipe: jalan, tangga, atap, koin, bangun 0→5 lantai, siang/malam, lampu, AC, jemuran, awan,
-  kontrol sentuh, layout portrait/landscape, ringkasan akhir sesi.
+  kontrol sentuh swipe (tanpa tombol), layout portrait/landscape, ringkasan akhir sesi.
 - Belum: developer rakus, bangunan menua, bencana, roh lain (Tanuki, Komainu), Ema/upgrade, pilihan sesi, suara.

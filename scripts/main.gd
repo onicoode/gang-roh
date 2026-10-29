@@ -1,10 +1,10 @@
 extends Control
-## Layar utama: dunia game dalam SubViewport (pixel-perfect) + UI + tombol sentuh.
+## Layar utama: dunia game dalam SubViewport (pixel-perfect) + UI.
+## Kontrol sentuh = swipe tak terlihat (node Swipe, scripts/swipe_input.gd).
 ## Ukuran dunia menyesuaikan layar: sisi terpendek selalu sekitar 180 piksel game,
 ## jadi di HP portrait terlihat lebih tinggi, di landscape lebih lebar.
 
 const TARGET_SHORT := 180.0
-const BTN := 96.0 # ukuran tombol sentuh di ruang UI (24 px x 4)
 
 var _msg_t := 0.0
 
@@ -14,11 +14,6 @@ var _msg_t := 0.0
 @onready var hud_month: Label = $UI/Month
 @onready var hud_coins: Label = $UI/Coins
 @onready var message: Label = $UI/Message
-@onready var btn_left: TouchScreenButton = $UI/BtnLeft
-@onready var btn_right: TouchScreenButton = $UI/BtnRight
-@onready var btn_up: TouchScreenButton = $UI/BtnUp
-@onready var btn_down: TouchScreenButton = $UI/BtnDown
-@onready var btn_action: TouchScreenButton = $UI/BtnAction
 @onready var end_panel: PanelContainer = $UI/EndPanel
 @onready var end_label: Label = $UI/EndPanel/VBox/Summary
 @onready var restart_btn: Button = $UI/EndPanel/VBox/Restart
@@ -57,12 +52,6 @@ func _layout() -> void:
 	hud_coins.position = Vector2(24, 54)
 	message.position = Vector2(16, 100)
 	message.size = Vector2(u.x - 32, 80)
-	var bottom := u.y - BTN - 24
-	btn_left.position = Vector2(24, bottom)
-	btn_right.position = Vector2(24 + BTN + 16, bottom)
-	btn_action.position = Vector2(u.x - BTN - 24, bottom)
-	btn_down.position = Vector2(u.x - BTN * 2 - 40, bottom)
-	btn_up.position = Vector2(u.x - BTN * 2 - 40, bottom - BTN - 16)
 	end_panel.position = (u - end_panel.size) / 2.0
 
 
