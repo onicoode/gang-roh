@@ -1,20 +1,24 @@
 extends Node2D
 ## Satu petak bangunan. floors = 0 berarti tanah kosong.
-## Lantai 1 = toko (koin selama siang), lantai 2+ = apartemen (sewa tiap awal bulan).
-## Bangunan menua tiap bulan (condition turun). Kusam = koin berkurang, bobrok = tidak
-## menghasilkan dan jadi incaran developer. Rawat dengan menanam koin di depan pintu.
+## Lantai 1 = toko, lantai 2+ = apartemen. Tiap lantai = 1 keluarga penghuni.
+## Roh tidak membangun sendiri: roh MENGABULKAN keinginan pemilik (gelembung di atas
+## bangunan) dengan Doa, lalu tukang datang membangun/memperbaiki.
+## Penghuni keluar berdoa di siang hari (ke hokora sendiri atau kuil pusat) → Doa muncul.
+## Bangunan menua tiap bulan. Kusam = penghuni jarang berdoa, bobrok = tidak berdoa sama
+## sekali dan jadi incaran developer.
 
 const W := 48
 const FLOOR_H := 32
 const MAX_FLOORS := 5
-const SHOP_INTERVAL := 14.0
+const PRAY_INTERVAL := 30.0 # detik antar warga keluar berdoa, dibagi jumlah penghuni
+const HOKORA_COST := 3
 const REPAIR_AT := 75.0 # di bawah ini bangunan bisa dirawat
 const DULL := 60.0 # di bawah ini kusam
 const RUIN := 30.0 # di bawah ini bobrok
 const CLEANSE_COST := 3 # cabut papan DIJUAL
 const RECLAIM_COST := 10 # rebut kembali petak yang digusur
 
-enum Job { NONE, BUILD, REPAIR, CLEANSE, RECLAIM }
+enum Job { NONE, BUILD, REPAIR, CLEANSE, RECLAIM, HOKORA }
 
 const TEX_LOT := preload("res://sprites/lot.png")
 const TEX_SHOP := preload("res://sprites/shop.png")
@@ -38,6 +42,7 @@ var constructing := false # selesai di awal bulan berikutnya
 var condition := 100.0 # 0..100, turun tiap bulan
 var signed := false # papan DIJUAL dari developer
 var owned := false # sudah digusur, milik developer
+var has_hokora := false # kuil kecil di depan bangunan
 var job := Job.NONE # tugas koin saat ini (diatur world.build_target lewat set_job)
 var job_on_roof := false
 var show_slots := false:
@@ -50,7 +55,9 @@ var show_slots := false:
 var _parts: Array[Node] = []
 var _acs: Array[Sprite2D] = []
 var _ac_t := 0.0
-var _shop_timer := 0.0
+var _pray_timer := 0.0
+var _fix_t := 0.0 # tukang sedang memperbaiki
+var _anim := 0.0
 var _wind_mat: ShaderMaterial
 var _paid: Dictionary = {} # koin tertanam per jenis tugas
 var _overlay: Node2D
@@ -60,7 +67,7 @@ func _ready() -> void:
 	_wind_mat = ShaderMaterial.new()
 	_wind_mat.shader = WIND_SHADER
 	_wind_mat.set_shader_parameter("strength", 1.5)
-	_shop_timer = randf_range(2.0, SHOP_INTERVAL)
+	_pray_timer = randf_range(2.0, 10.0)
 	_overlay = Node2D.new()
 	_overlay.draw.connect(_draw_overlay)
 	add_child(_overlay)
@@ -74,13 +81,18 @@ func _process(delta: float) -> void:
 		_ac_t = 0.0
 		for ac in _acs:
 			ac.frame = 1 - ac.frame
-	# toko menghasilkan koin selama jam buka
-	if floors >= 1 and world and world.is_open() and condition >= RUIN:
-		_shop_timer -= delta
-		if _shop_timer <= 0.0:
-			var slow: float = 1.6 if condition < DULL else 1.0
-			_shop_timer = SHOP_INTERVAL * slow * randf_range(0.8, 1.2)
-			world.spawn_coin(Vector2(door_x(), -2))
+	# penghuni keluar berdoa selama siang
+	if floors >= 1 and not owned and world and world.prayer_time() and condition >= RUIN:
+		_pray_timer -= delta
+		if _pray_timer <= 0.0:
+			var slow: float = 1.7 if condition < DULL else 1.0
+			_pray_timer = PRAY_INTERVAL / floors * slow * randf_range(0.8, 1.2)
+			world.send_worshipper(self)
+	# tukang bekerja (animasi)
+	_fix_t = maxf(_fix_t - delta, 0.0)
+	if constructing or _fix_t > 0.0:
+		_anim += delta
+		_overlay.queue_redraw()
 
 
 # ---------------------------------------------------------------- query
@@ -95,7 +107,24 @@ func job_for(on_roof: bool) -> Job:
 		return Job.REPAIR
 	if can_build_more() and on_roof == (floors > 0):
 		return Job.BUILD
+	if not on_roof and floors > 0 and not has_hokora:
+		return Job.HOKORA
 	return Job.NONE
+
+
+## Keinginan utama pemilik (ditampilkan di gelembung).
+func wish() -> Job:
+	var j := job_for(false)
+	if j == Job.NONE or j == Job.HOKORA:
+		var r: Job = job_for(true) if floors > 0 else Job.NONE
+		if r != Job.NONE:
+			return r
+	return j
+
+
+## Titik hokora (tempat penghuni berdoa).
+func hokora_x() -> float:
+	return position.x + 6.0
 
 
 func set_job(j: Job, on_roof: bool) -> void:
@@ -112,6 +141,8 @@ func cost() -> int:
 			return RECLAIM_COST
 		Job.CLEANSE:
 			return CLEANSE_COST
+		Job.HOKORA:
+			return HOKORA_COST
 		Job.REPAIR:
 			return maxi(ceili((REPAIR_AT + 1.0 - condition) / 25.0), 1)
 	return 4 if floors == 0 else 4 + floors * 3
@@ -163,10 +194,11 @@ func center_x() -> float:
 func add_coin() -> void:
 	if job == Job.REPAIR:
 		condition = minf(condition + 25.0, 100.0)
+		_fix_t = 4.0
 		world.sfx.play("repair")
-		world.pop_text(Vector2(center_x(), roof_y() - 12.0), "dirawat", Color("9fe0a0"))
+		world.pop_text(Vector2(center_x(), roof_y() - 12.0), "berkah!", Color("9fe0a0"))
 		if condition >= REPAIR_AT:
-			world.say("Bangunan kembali terawat.")
+			world.say("Pemilik jadi rajin merawat. Tukang datang memperbaiki.")
 		rebuild()
 		return
 	var n := paid() + 1
@@ -180,16 +212,20 @@ func add_coin() -> void:
 		Job.BUILD:
 			constructing = true
 			world.sfx.play("build")
-			world.say("Pembangunan dimulai! Selesai bulan depan.")
+			world.say("Keinginan terkabul! Rezeki pemilik lancar, tukang mulai membangun.")
 		Job.CLEANSE:
 			signed = false
 			world.sfx.play("build")
-			world.say("Papan DIJUAL dicabut!")
+			world.say("Pemilik batal menjual tanahnya. Papan DIJUAL dicabut!")
 		Job.RECLAIM:
 			owned = false
 			condition = 100.0
 			world.sfx.play("floor")
-			world.say("Petak berhasil direbut kembali!")
+			world.say("Proyek developer bangkrut! Warga membeli kembali petak ini.")
+		Job.HOKORA:
+			has_hokora = true
+			world.sfx.play("floor")
+			world.say("Penghuni memasang hokora. Mereka bisa berdoa di depan rumah.")
 	rebuild()
 
 
@@ -206,13 +242,15 @@ func evict() -> void:
 	constructing = false
 	floors = 0
 	condition = 100.0
+	has_hokora = false
 	_paid.clear()
 	rebuild()
 
 
+## Lambaian Rezeki: toko ramai, pengunjung yang bersyukur ikut berdoa.
 func lucky_wave(n: int = 3) -> void:
 	for i in n:
-		world.spawn_coin(Vector2(door_x(), -2))
+		world.send_worshipper(self, true)
 
 
 func on_new_month() -> void:
@@ -232,10 +270,7 @@ func on_new_month() -> void:
 			condition = RUIN
 			world.say("Penghuni lantai atas pindah... bangunan terlalu bobrok.")
 		rebuild()
-	# sewa apartemen (bangunan bobrok tidak bayar sewa)
-	if condition >= RUIN:
-		for i in maxi(floors - 1, 0):
-			world.spawn_coin(Vector2(door_x(), -2))
+
 
 
 # ---------------------------------------------------------------- visual
@@ -342,6 +377,14 @@ func _draw_overlay() -> void:
 		o.draw_rect(Rect2(16, -11, 16, 7), Color("eeeeee"))
 		o.draw_rect(Rect2(18, -9, 12, 1), Color("c03040"))
 		o.draw_rect(Rect2(18, -7, 8, 1), Color("3a3f5a"))
+	if has_hokora and not owned:
+		_draw_hokora(o)
+	if constructing:
+		_draw_workers(o, 2)
+	elif _fix_t > 0.0:
+		_draw_workers(o, 1)
+	if owned:
+		pass
 	elif signed:
 		# papan DIJUAL merah di tiang
 		o.draw_rect(Rect2(8, -12, 1, 12), Color("5a3a24"))
@@ -349,7 +392,10 @@ func _draw_overlay() -> void:
 		o.draw_rect(Rect2(3, -19, 12, 7), Color("d03838"))
 		o.draw_rect(Rect2(5, -17, 8, 1), Color("f2f0e6"))
 		o.draw_rect(Rect2(5, -15, 5, 1), Color("f2f0e6"))
-	# lingkaran koin di atas titik tugas
+	# gelembung keinginan pemilik
+	if not show_slots:
+		_draw_wish(o, wish())
+	# lingkaran Doa di atas titik tugas
 	if not show_slots or job == Job.NONE:
 		return
 	var total := cost()
@@ -363,3 +409,75 @@ func _draw_overlay() -> void:
 	for i in total:
 		var src := Rect2(5 if i < p else 0, 0, 5, 5)
 		o.draw_texture_rect_region(TEX_SLOTS, Rect2(Vector2(start_x + i * 6, y0), Vector2(5, 5)), src)
+
+
+func _draw_hokora(o: Node2D) -> void:
+	# kuil kecil kayu beratap merah di kiri depan bangunan
+	var x := 2.0
+	o.draw_rect(Rect2(x + 1, -6, 6, 6), Color("7a5230"))
+	o.draw_rect(Rect2(x + 2, -5, 4, 4), Color("3a2418"))
+	o.draw_rect(Rect2(x + 3, -4, 2, 2), Color("ffd890"))
+	o.draw_rect(Rect2(x, -8, 8, 2), Color("c03838"))
+	o.draw_rect(Rect2(x + 1, -9, 6, 1), Color("c03838"))
+	o.draw_rect(Rect2(x - 1, -7, 10, 1), Color("8a2424"))
+
+
+func _draw_workers(o: Node2D, n: int) -> void:
+	# tukang berhelm kuning memalu
+	for i in n:
+		var x := 12.0 + i * 20.0
+		var up: int = 2 if int((_anim + i * 0.3) * 5.0) % 2 == 0 else 0
+		o.draw_rect(Rect2(x - 1, -4, 1, 4), Color("3a3f5a"))
+		o.draw_rect(Rect2(x + 1, -4, 1, 4), Color("3a3f5a"))
+		o.draw_rect(Rect2(x - 1, -9, 3, 5), Color("4a7ab0"))
+		o.draw_rect(Rect2(x - 1, -12, 3, 3), Color("e0b088"))
+		o.draw_rect(Rect2(x - 2, -13, 5, 1), Color("f0c030"))
+		o.draw_rect(Rect2(x - 1, -14, 3, 1), Color("f0c030"))
+		o.draw_rect(Rect2(x + 2, -9 - up, 1, 3), Color("e0b088"))
+		o.draw_rect(Rect2(x + 2, -11 - up, 2, 2), Color("8a8a8a"))
+
+
+func _draw_wish(o: Node2D, j: Job) -> void:
+	if j == Job.NONE:
+		return
+	var top: float = -30.0 if floors == 0 else roof_y() - 24.0
+	if floors >= 3:
+		top -= 8.0
+	var bx := W / 2.0 - 6.0
+	var by := top
+	var paper := Color(1, 0.98, 0.92, 0.92)
+	o.draw_rect(Rect2(bx, by, 12, 9), paper)
+	o.draw_rect(Rect2(bx + 1, by - 1, 10, 1), paper)
+	o.draw_rect(Rect2(bx + 1, by + 9, 10, 1), paper)
+	o.draw_rect(Rect2(bx + 3, by + 11, 2, 1), paper)
+	o.draw_rect(Rect2(bx + 2, by + 13, 1, 1), paper)
+	var ix := bx + 3.0
+	var iy := by + 1.0
+	match j:
+		Job.BUILD:
+			# rumah (+ kalau tambah lantai)
+			o.draw_rect(Rect2(ix + 1, iy + 3, 5, 4), Color("d07a48"))
+			o.draw_rect(Rect2(ix, iy + 2, 7, 1), Color("c03838"))
+			o.draw_rect(Rect2(ix + 1, iy + 1, 5, 1), Color("c03838"))
+			o.draw_rect(Rect2(ix + 2, iy, 3, 1), Color("c03838"))
+			o.draw_rect(Rect2(ix + 3, iy + 5, 1, 2), Color("3a2418"))
+		Job.REPAIR:
+			# palu
+			o.draw_rect(Rect2(ix + 1, iy + 1, 5, 2), Color("6a6a72"))
+			o.draw_rect(Rect2(ix + 3, iy + 3, 1, 4), Color("8a5a30"))
+		Job.CLEANSE:
+			# papan dicoret
+			o.draw_rect(Rect2(ix, iy + 1, 7, 5), Color("d03838"))
+			for k in 5:
+				o.draw_rect(Rect2(ix + 1 + k, iy + 1 + k, 1, 1), Color("f2f0e6"))
+		Job.RECLAIM:
+			# rumah abu-abu
+			o.draw_rect(Rect2(ix + 1, iy + 3, 5, 4), Color("8a96a8"))
+			o.draw_rect(Rect2(ix, iy + 2, 7, 1), Color("5a6478"))
+			o.draw_rect(Rect2(ix + 2, iy + 1, 3, 1), Color("5a6478"))
+		Job.HOKORA:
+			# torii kecil
+			o.draw_rect(Rect2(ix, iy + 1, 7, 1), Color("c03838"))
+			o.draw_rect(Rect2(ix + 1, iy + 3, 5, 1), Color("c03838"))
+			o.draw_rect(Rect2(ix + 1, iy + 2, 1, 5), Color("c03838"))
+			o.draw_rect(Rect2(ix + 5, iy + 2, 1, 5), Color("c03838"))

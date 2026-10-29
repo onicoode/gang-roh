@@ -1,8 +1,9 @@
 extends Node2D
-## Developer rakus. Datang malam hari dari ujung gang, mengincar petak kosong
+## Developer rakus. Datang siang hari dari ujung gang, mengincar petak kosong
 ## atau bangunan bobrok, lalu memasang papan DIJUAL. Kalau papan itu masih ada
 ## saat dia datang lagi, petak digusur.
-## Cara mengusir: pagar di ujung gang, atau "uang rokok" (tanam Doa di dekatnya).
+## Cara mengusir: roh MENYIALKAN dia (pakai Doa di dekatnya): awan hujan kecil
+## mengikutinya, HP-nya berdering, dia kesal lalu pulang.
 
 enum St { WALK, PUSH, WORK, LEAVE }
 
@@ -37,6 +38,7 @@ var show_slots := false:
 var _t := 0.0
 var _anim := 0.0
 var _moving := false
+var _jinx := false # kena sial: awan hujan di atas kepala
 
 
 func _process(delta: float) -> void:
@@ -105,7 +107,7 @@ func leave() -> void:
 	show_slots = false
 
 
-# ---------------------------------------------------------------- uang rokok (dipakai kucing)
+# ---------------------------------------------------------------- sialkan (dipakai kucing)
 
 func cost() -> int:
 	return bribe_cost
@@ -117,10 +119,11 @@ func can_take_coin() -> bool:
 
 func add_coin() -> void:
 	paid += 1
-	world.sfx.play("bribe")
+	world.sfx.play("jinx")
 	if paid >= bribe_cost:
-		world.say("Developer menerima uang rokok dan pergi... untuk malam ini.")
-		world.pop_text(position + Vector2(0, -22), "pergi!", Color("ffd36a"))
+		_jinx = true
+		world.say("Developer kena sial: kehujanan, HP berdering terus. Dia kesal dan pulang!")
+		world.pop_text(position + Vector2(0, -24), "sial!", Color("9fc8ff"))
 		leave()
 	queue_redraw()
 
@@ -163,9 +166,22 @@ func _draw() -> void:
 			draw_rect(Rect2(-2, -6, 5, 4), CASE)
 			draw_rect(Rect2(-1, -7, 3, 1), SHOE)
 	draw_set_transform(Vector2.ZERO)
-	# lingkaran koin uang rokok
+	if _jinx:
+		_draw_rain()
+	# lingkaran Doa (sialkan)
 	if show_slots and can_take_coin():
 		var start := -bribe_cost * 3.0
 		for i in bribe_cost:
 			var src := Rect2(5 if i < paid else 0, 0, 5, 5)
 			draw_texture_rect_region(SLOT, Rect2(Vector2(start + i * 6, -26), Vector2(5, 5)), src)
+
+
+func _draw_rain() -> void:
+	# awan kelabu kecil + tetes hujan
+	var cy := -26.0
+	draw_rect(Rect2(-5, cy, 10, 3), Color("6a7080"))
+	draw_rect(Rect2(-3, cy - 2, 6, 2), Color("7a8090"))
+	for i in 4:
+		var x := -4.0 + i * 2.6
+		var y := cy + 4.0 + fmod(_anim * 30.0 + i * 5.0, 14.0)
+		draw_rect(Rect2(x, y, 1, 2), Color(0.6, 0.75, 1.0, 0.8))

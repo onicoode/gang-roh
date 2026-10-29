@@ -6,9 +6,11 @@ Bagi roh, waktu berjalan cepat: **1 hari = 1 bulan manusia**. Kamu menyaksikan (
 gang tumbuh dari warung satu lantai menjadi deretan gedung bertingkat.
 
 ## Core loop (gaya Kingdom Two Crowns)
-1. Siang: toko menghasilkan koin, kuil menerima persembahan.
-2. Pungut koin (kantong terbatas), jalan kiri-kanan, naik tangga ke atap.
-3. Tanam koin di titik bangun → perancah → lantai baru di awal bulan berikutnya.
+1. Siang: warga berdoa di kuil pusat atau hokora bangunan → bola Doa muncul dari mereka.
+2. Pungut Doa (kantong terbatas), jalan kiri-kanan, naik tangga ke atap.
+3. Roh tidak membangun sendiri: pakai Doa untuk **mengabulkan keinginan** pemilik (gelembung di atas
+   bangunan) → rezeki lancar → tukang datang → lantai baru di awal bulan berikutnya.
+   Siklus: warga berdoa → Doa → berkah → gang makmur → lebih banyak warga berdoa.
 4. Malam: developer rakus datang (mulai bulan 2).
 
 ## Developer & bangunan menua (v0.2)
@@ -16,10 +18,11 @@ gang tumbuh dari warung satu lantai menjadi deretan gedung bertingkat.
 - Malam developer masuk, mengincar petak terdekat yang kosong atau bobrok → pasang papan DIJUAL.
   Kalau papan masih ada saat dia datang lagi → petak digusur (pagar seng). 4 petak digusur = kalah.
 - Lawan: pagar bambu di ujung gang (tiap koin +1, maks 4; didorong −1 tiap 7 dtk),
-  uang rokok (2 + bulan/3 koin, dia pergi malam itu), cabut papan (3 koin), rebut petak (10 koin).
+  sialkan developer (2 + bulan/3 Doa: awan hujan, dia pulang), berkati pemilik supaya batal menjual (3 Doa),
+  rebut petak (10 Doa: proyek developer bangkrut).
 - Bangunan menua tiap bulan (makin tinggi makin cepat). Kusam (<60): koin toko lebih jarang, lampu redup.
   Bobrok (<30): toko & sewa berhenti, jadi incaran developer; kondisi 0 → penghuni lantai atas pindah.
-  Rawat: tanam koin di depan pintu atau dari atap (+25 per koin).
+  Rawat: berkati pemilik di depan pintu atau dari atap (+25 per Doa) → tukang memperbaiki.
 
 ## Kontrol
 Kiri/kanan, atas/bawah (tangga), satu tombol aksi. Di HP: swipe ke arah tujuan lalu tahan (di mana saja kecuali UI), sentuh-tahan di tempat/ketuk = aksi; mendukung portrait dan landscape.
@@ -60,8 +63,13 @@ Kalah: kuil tergusur (Ema tetap didapat, dikurangi).
 | Panjang | 5 tahun | 60 | Ema ×2, peluang unlock langka |
 
 ## Sumber daya
-- **Doa** (dalam sesi): bola cahaya dari warga yang bahagia (toko, sewa, kuil, Lambaian Rezeki).
-  Dipakai untuk membangun, merawat, pagar, dan uang rokok.
+- **Doa** (dalam sesi): bola cahaya yang hanya muncul dari warga yang terlihat sedang berdoa:
+  - Kuil pusat: rombongan pengunjung tiap pagi (2 + jumlah toko) dan pengunjung dari luar gang (~16 dtk). 2 Doa/orang.
+  - Hokora (kuil kecil di depan bangunan, 3 Doa): penghuni berdoa di depan rumah, 1 Doa/orang.
+  - Penghuni tiap bangunan keluar berdoa (lebih sering kalau banyak lantai; kusam lebih jarang, bobrok tidak).
+  - Lambaian Rezeki: toko ramai, pengunjung bersyukur ikut berdoa.
+  - Gaki yang mencapai kuil mengotorinya → pengunjung pagi berkurang. Gaki memakan Doa di jalan.
+  Dipakai untuk mengabulkan keinginan, pagar roh, menyialkan developer, melempar Gaki.
 - **Ema** (permanen): didapat di akhir sesi = bulan dilalui + total lantai (+10 kalau bertahan setahun;
   dibagi dua kalau kalah).
 

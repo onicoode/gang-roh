@@ -5,7 +5,7 @@ Baca file ini dulu; jangan menjelajahi seluruh proyek kecuali perlu. Desain leng
 ## Ringkas
 Game pixel art side-scroller (Godot 4.7.2, GDScript, renderer GL Compatibility) untuk PC, Web, dan Android,
 portrait maupun landscape. Pemain = roh penjaga gang (prototipe: Maneki-neko). Kumpulkan koin persembahan,
-tanam di titik bangun → bangunan tumbuh lantai demi lantai. 1 hari game = 1 bulan manusia. Sesi pendek 12 bulan.
+warga berdoa → Doa muncul → roh mengabulkan keinginan warga → tukang membangun. 1 hari game = 1 bulan manusia. Sesi pendek 12 bulan.
 Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan sederhana.
 
 ## Alur kerja
@@ -30,13 +30,14 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 | `scenes/main.tscn` + `scripts/main.gd` | Game: SubViewport pixel-perfect (sisi terpendek ≈180 px game), HUD Doa, jeda (tombol II/Back/Esc), panel akhir + Ema |
 | `scripts/swipe_input.gd` | Kontrol sentuh tak terlihat: swipe+tahan = gerak, sentuh diam/ketuk = aksi (`_unhandled_input`, UI makan sentuhan dulu) |
 | `scenes/world.tscn` + `scripts/world.gd` | Gang: petak, kuil, siklus hari/bulan, langit, parallax, koin, jadwal developer, target koin, kalah, shake, teks melayang |
-| `scripts/building.gd` | Satu petak: lantai, kondisi (menua), papan DIJUAL/digusur, tugas koin (`Job`: bangun/rawat/cabut/rebut), sprite, overlay |
-| `scripts/developer.gd` | Developer rakus (siang, digambar `_draw`): pasang papan DIJUAL, gusur, terima uang rokok |
+| `scripts/building.gd` | Satu petak: lantai, kondisi (menua), hokora, papan DIJUAL/digusur, `Job` (bangun/rawat/batal jual/rebut/hokora), gelembung keinginan, tukang, kirim warga berdoa |
+| `scripts/developer.gd` | Developer rakus (siang, digambar `_draw`): pasang papan DIJUAL, gusur; disialkan roh (awan hujan) |
+| `scripts/warga.gd` | Warga: keluar rumah/datang dari ujung gang, berdoa di kuil pusat (2 Doa) atau hokora (1 Doa). Satu-satunya sumber Doa |
 | `scripts/gaki.gd` | Yokai Gaki (malam): makan Doa di jalan, pukul pagar & Tsukumogami, curi persembahan kuil; HP 3 |
 | `scripts/spirit.gd` | Tsukumogami (pasukan): Bakezori/Karakasa/Chochin, lahir dari bangunan tiap malam, jaga rumah |
 | `scripts/gate.gd` | Pagar roh di ujung gang, menahan yokai (hp 0–4, tanam Doa = +1) |
 | `scripts/sfx.gd` | Efek suara dibuat dari kode (tanpa file audio): `world.sfx.play("pickup")` |
-| `scripts/cat.gd` | Pemain: state GROUND/CLIMB/ROOF, tanam koin (tahan aksi), Lambaian Rezeki |
+| `scripts/cat.gd` | Pemain: state GROUND/CLIMB/ROOF, pakai Doa (tahan aksi), Lambaian Rezeki (mendatangkan pengunjung) |
 | `scripts/coin.gd` | Koin memantul + dipungut |
 | `shaders/` | `sky` (gradasi), `wind` (goyang jemuran/tanaman) |
 | `tools/gen_sprites.py` | Generator sprite placeholder (Python murni). `python tools/gen_sprites.py` |
@@ -61,5 +62,7 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
   sumber daya koin → **Doa** (bola cahaya; variabel kode masih bernama `coins`).
 - v0.4 tahap 1: developer pindah ke siang; malam = Gaki (dari ujung + sarang bangunan bobrok/tergusur)
   vs Tsukumogami (terawat 1/lantai, kusam separuh, bobrok 0). Lempar Doa ke Gaki = 2 dmg.
+- v0.5: Doa hanya dari warga yang berdoa (pengunjung kuil pagi + dari luar gang, penghuni tiap bangunan);
+  hokora per bangunan (3 Doa); gelembung keinginan; tukang; developer disialkan. Toko/sewa tidak lagi memberi Doa.
 - Tahap berikut: kuil bisa di-upgrade (Kitsune-bi, Komainu, Kodama), lalu Binbogami, Noppera-bo, Oni.
 - Belum: bencana, roh lain (Tanuki, Komainu), Ema/upgrade, pilihan sesi, suara.

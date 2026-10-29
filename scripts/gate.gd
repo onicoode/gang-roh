@@ -1,6 +1,6 @@
 extends Node2D
 ## Pagar bambu di ujung gang. Menahan developer di malam hari.
-## Tanam koin di dekatnya: tiap koin = +1 kekuatan (maks MAX_HP).
+## Pakai Doa di dekatnya: tiap Doa = +1 kekuatan (maks MAX_HP).
 ## Developer yang mendorong pagar mengurangi kekuatan sedikit demi sedikit.
 
 const MAX_HP := 4

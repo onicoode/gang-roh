@@ -1,8 +1,9 @@
 extends Node2D
 ## Maneki-neko, roh penjaga gang.
-## Kiri/kanan: jalan. Atas/bawah: naik/turun tangga. Aksi (tahan): tanam koin
-## (bangun, rawat bangunan, cabut papan DIJUAL, perkuat pagar, uang rokok developer).
-## Aksi di depan toko: "Lambaian Rezeki" (Doa bonus, ada jeda).
+## Kiri/kanan: jalan. Atas/bawah: naik/turun tangga. Aksi (tahan): pakai Doa untuk
+## mengabulkan keinginan warga (bangun, rawat, hokora, batal jual), memperkuat pagar roh,
+## menyialkan developer, atau melempar Gaki.
+## Aksi di depan toko: "Lambaian Rezeki" (toko ramai, pengunjung ikut berdoa; ada jeda).
 ## Variabel `coins` = jumlah Doa yang dibawa (nama lama dipertahankan).
 
 enum State { GROUND, CLIMB, ROOF }

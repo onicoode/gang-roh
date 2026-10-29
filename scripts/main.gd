@@ -48,7 +48,7 @@ func _ready() -> void:
 	end_label.get_parent().add_child(menu_btn)
 	end_panel.visible = false
 	_layout()
-	show_message("Kumpulkan Doa warga, lalu tanam di tanah kosong.")
+	show_message("Warga berdoa → Doa muncul. Pungut, lalu kabulkan keinginan warga (gelembung).")
 
 
 func _process(delta: float) -> void:

@@ -11,7 +11,7 @@ const SKILLS := {
 	"kantong": ["Kantong", "Bawa Doa lebih banyak (+2/lv)", 3],
 	"berkah": ["Berkah", "Doa awal sesi lebih banyak (+2/lv)", 4],
 	"firasat": ["Firasat", "Firasat developer lebih awal; pagar awal lebih kuat", 4],
-	"pesona": ["Pesona", "Lambaian Rezeki lebih sering & lebih banyak Doa", 5],
+	"pesona": ["Pesona", "Lambaian Rezeki lebih sering & mendatangkan lebih banyak pengunjung", 5],
 }
 const ORDER: Array[String] = ["langkah", "kantong", "berkah", "firasat", "pesona"]
 

@@ -1,5 +1,6 @@
 extends Node2D
-## Gang: deretan petak bangunan, kuil kecil, koin, dan siklus hari.
+## Gang: deretan petak bangunan, kuil, warga, Doa, dan siklus hari.
+## Doa hanya muncul dari warga yang terlihat berdoa (di kuil pusat atau hokora bangunan).
 ## 1 hari di game = 1 bulan bagi manusia. Sesi pendek = 12 bulan.
 ## Siang (mulai bulan 2): developer rakus memasang papan DIJUAL. Kalah kalau developer
 ## menguasai LOSE_PLOTS petak (kuil ikut tergusur).
@@ -25,6 +26,10 @@ const SPIRIT_T := 0.7 # malam: Tsukumogami bangun
 const YOKAI_WARN_T := 0.58 # sore: firasat yokai
 const YOKAI_T := 0.72 # malam: yokai mulai datang
 const YOKAI_GAP := 2.5 # detik antar kedatangan Gaki
+const PRAYER_END_T := 0.62 # setelah ini warga tidak keluar berdoa lagi
+const VISITOR_GAP := 1.4 # detik antar pengunjung kuil yang datang berurutan
+const PASSERBY_TIME := 16.0 # tiap sekian detik, 1 pengunjung dari luar gang
+const MAX_WARGA := 24
 
 const BuildingScene := preload("res://scenes/building.tscn")
 const CoinScene := preload("res://scenes/coin.tscn")
@@ -33,6 +38,7 @@ const DevScript := preload("res://scripts/developer.gd")
 const GateScript := preload("res://scripts/gate.gd")
 const GakiScript := preload("res://scripts/gaki.gd")
 const SpiritScript := preload("res://scripts/spirit.gd")
+const WargaScript := preload("res://scripts/warga.gd")
 const SfxScript := preload("res://scripts/sfx.gd")
 
 # Warna langit sepanjang hari (0 = pagi, 1 = pagi berikutnya)
@@ -68,7 +74,11 @@ var _night_started := false
 var _yokai_warned := false
 var _yokai_queue: Array = [] # [{"x": float, "dir": int, "gate": Node}]
 var _yokai_timer := 0.0
-var _stolen := 0 # persembahan dicuri Gaki malam ini
+var _stolen := 0 # Gaki yang mengotori kuil malam ini (pengunjung pagi berkurang)
+var _warga: Node2D
+var _visitor_queue := 0
+var _visitor_t := 0.0
+var _passerby_t := 0.0
 var _fx: Node2D
 
 @onready var sky: ColorRect = $SkyLayer/Sky
@@ -92,6 +102,8 @@ func _ready() -> void:
 	tinted.move_child(_actors, player.get_index())
 	_devs = Node2D.new()
 	_actors.add_child(_devs)
+	_warga = Node2D.new()
+	_actors.add_child(_warga)
 	_spirits = Node2D.new()
 	_actors.add_child(_spirits)
 	_yokai = Node2D.new()
@@ -145,6 +157,7 @@ func _process(delta: float) -> void:
 			return
 	_update_developers()
 	_update_night(delta)
+	_update_visitors(delta)
 	_update_focus()
 	_update_shake(delta)
 	_apply_time()
@@ -181,7 +194,7 @@ func shop_near(x: float) -> Node:
 	return null
 
 
-## Benda yang bisa menerima koin di dekat kucing: developer (uang rokok), pagar,
+## Benda yang bisa menerima Doa di dekat kucing: Gaki (lempar), developer (sialkan), pagar,
 ## atau bangunan (bangun / rawat / cabut papan / rebut petak).
 func build_target(cat: Node2D) -> Node:
 	var on_ground: bool = cat.state == cat.State.GROUND
@@ -268,7 +281,60 @@ func coin_near(x: float, r: float) -> Node:
 func gaki_at_shrine() -> void:
 	_stolen += 1
 	sfx.play("alert")
-	say("Gaki mencuri persembahan kuil! (%d)" % _stolen)
+	say("Gaki mengotori kuil! Besok pagi pengunjung berkurang. (%d)" % _stolen)
+
+
+func prayer_time() -> bool:
+	return day_t < PRAYER_END_T and not ended
+
+
+## Penghuni bangunan b keluar berdoa (ke hokora sendiri atau kuil pusat).
+func send_worshipper(b: Node, guest: bool = false) -> void:
+	if _warga.get_child_count() >= MAX_WARGA:
+		return
+	var w = WargaScript.new()
+	w.world = self
+	var door: float = b.door_x()
+	w.start_x = door
+	w.position = Vector2(door, 0)
+	var chance: float = 0.5 if guest else 0.7
+	if b.has_hokora and randf() < chance:
+		w.spot_x = b.hokora_x()
+		w.amount = 1
+	else:
+		w.spot_x = shrine.position.x
+		w.amount = 2
+	_warga.add_child(w)
+
+
+## Pengunjung dari luar gang ke kuil pusat.
+func _send_visitor() -> void:
+	if _warga.get_child_count() >= MAX_WARGA:
+		return
+	var w = WargaScript.new()
+	w.world = self
+	var x: float = -6.0 if randf() < 0.5 else world_w + 6.0
+	w.start_x = x
+	w.position = Vector2(x, 0)
+	w.spot_x = shrine.position.x
+	w.amount = 2
+	w.from_edge = true
+	_warga.add_child(w)
+
+
+func _update_visitors(delta: float) -> void:
+	if not prayer_time():
+		return
+	_passerby_t -= delta
+	if _passerby_t <= 0.0:
+		_passerby_t = PASSERBY_TIME * randf_range(0.8, 1.2)
+		_visitor_queue += 1
+	if _visitor_queue > 0:
+		_visitor_t -= delta
+		if _visitor_t <= 0.0:
+			_visitor_t = VISITOR_GAP
+			_visitor_queue -= 1
+			_send_visitor()
 
 
 func yokai_defeated(y: Node) -> void:
@@ -308,7 +374,7 @@ func dev_claim(b: Node) -> void:
 	else:
 		b.put_sign()
 		sfx.play("alert")
-		say("Papan DIJUAL dipasang! Cabut (3 Doa) sebelum developer kembali.")
+		say("Papan DIJUAL dipasang! Berkati pemiliknya (3 Doa) supaya batal menjual.")
 
 
 func owned_count() -> int:
@@ -549,15 +615,15 @@ func _update_shake(delta: float) -> void:
 	_cam.offset = Vector2(roundf(randf_range(-_shake, _shake)), roundf(randf_range(-_shake, _shake)))
 
 
+## Pagi: rombongan pengunjung kuil (makin banyak toko, makin ramai).
 func _shrine_offering() -> void:
 	var n := 2
 	for b in buildings:
-		if b.floors > 0:
+		if b.floors > 0 and not b.owned:
 			n += 1
 	n = maxi(n - _stolen, 0)
 	_stolen = 0
-	for i in n:
-		spawn_coin(shrine.position + Vector2(0, -6))
+	_visitor_queue += n
 
 
 func _apply_time() -> void:
@@ -597,6 +663,10 @@ func _apply_debug_args() -> void:
 				buildings[i].rebuild()
 			buildings[1].signed = true
 			buildings[1].rebuild()
+			buildings[0].has_hokora = true
+			buildings[3].has_hokora = true
+			buildings[0].rebuild()
+			buildings[3].rebuild()
 			gates[0].hp = 2
 			gates[0].queue_redraw()
 		elif arg.begins_with("--time="):

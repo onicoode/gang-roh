@@ -2,7 +2,7 @@ extends Node
 ## Kontrol sentuh tak terlihat (Android/HP).
 ## - Geser (swipe) ke kiri/kanan/atas/bawah lalu tahan → pemain terus bergerak ke arah itu.
 ##   Geser ke arah lain tanpa melepas jari → arah ikut berganti.
-## - Sentuh dan tahan di tempat (tanpa geser) → tombol aksi (tanam koin / melambai).
+## - Sentuh dan tahan di tempat (tanpa geser) → tombol aksi (pakai Doa / melambai).
 ## Berlaku di area layar mana saja. UI (Control dengan mouse_filter STOP, mis. tombol/panel)
 ## memakan sentuhan lebih dulu karena kita pakai _unhandled_input.
 
