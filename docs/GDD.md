@@ -12,7 +12,7 @@ gang tumbuh dari warung satu lantai menjadi deretan gedung bertingkat.
 4. Malam: tantangan datang (belum di prototipe).
 
 ## Kontrol
-Kiri/kanan, atas/bawah (tangga), satu tombol aksi. Di HP: tombol sentuh; mendukung portrait dan landscape.
+Kiri/kanan, atas/bawah (tangga), satu tombol aksi. Di HP: swipe ke arah tujuan lalu tahan (di mana saja kecuali UI), sentuh-tahan di tempat/ketuk = aksi; mendukung portrait dan landscape.
 
 ## Roh penjaga (dipilih di awal sesi)
 | Roh | Fokus | Pasif | Unik |
