@@ -54,6 +54,12 @@ func _process(delta: float) -> void:
 		_refresh()
 
 
+## Lepas semua jari (dipakai saat jeda / akhir sesi).
+func reset() -> void:
+	_touches.clear()
+	_refresh()
+
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		_touches.clear()

@@ -2,7 +2,8 @@ extends Node2D
 ## Maneki-neko, roh penjaga gang.
 ## Kiri/kanan: jalan. Atas/bawah: naik/turun tangga. Aksi (tahan): tanam koin
 ## (bangun, rawat bangunan, cabut papan DIJUAL, perkuat pagar, uang rokok developer).
-## Aksi di depan toko: "Lambaian Rezeki" (koin bonus, ada jeda).
+## Aksi di depan toko: "Lambaian Rezeki" (Doa bonus, ada jeda).
+## Variabel `coins` = jumlah Doa yang dibawa (nama lama dipertahankan).
 
 enum State { GROUND, CLIMB, ROOF }
 
@@ -21,8 +22,12 @@ const ANIMS := {
 var world: Node = null
 var state := State.GROUND
 var roof_building: Node = null # bangunan yang tangganya/atapnya sedang dipakai
-var coins := 3
+var coins := 3 # Doa di kantong
 var max_coins := 8
+# diatur world dari upgrade permanen (Save)
+var speed_mult := 1.0
+var wave_cooldown := WAVE_COOLDOWN
+var wave_bonus := 3
 
 var _drop_timer := 0.0
 var _wave_cd := 0.0
@@ -45,7 +50,7 @@ func _process(delta: float) -> void:
 	match state:
 		State.GROUND:
 			if absf(h) > 0.1:
-				position.x = clampf(position.x + h * SPEED * delta, 8.0, world.world_w - 8.0)
+				position.x = clampf(position.x + h * SPEED * speed_mult * delta, 8.0, world.world_w - 8.0)
 				moving = true
 			if v < -0.5:
 				var b = world.ladder_at(position.x)
@@ -56,7 +61,7 @@ func _process(delta: float) -> void:
 		State.CLIMB:
 			var b = roof_building
 			if absf(v) > 0.1:
-				position.y = clampf(position.y + v * CLIMB_SPEED * delta, b.roof_y(), 0.0)
+				position.y = clampf(position.y + v * CLIMB_SPEED * speed_mult * delta, b.roof_y(), 0.0)
 				moving = true
 			if position.y >= 0.0 and (v > 0.5 or absf(h) > 0.5):
 				state = State.GROUND
@@ -67,7 +72,7 @@ func _process(delta: float) -> void:
 			var b = roof_building
 			position.y = b.roof_y() # ikut naik kalau lantai bertambah
 			if absf(h) > 0.1:
-				position.x = clampf(position.x + h * SPEED * delta, b.position.x + 4.0, b.ladder_x())
+				position.x = clampf(position.x + h * SPEED * speed_mult * delta, b.position.x + 4.0, b.ladder_x())
 				moving = true
 			if v > 0.5 and absf(position.x - b.ladder_x()) < 4.0:
 				state = State.CLIMB
@@ -93,7 +98,7 @@ func _handle_action(delta: float) -> void:
 			target.add_coin()
 	elif Input.is_action_just_pressed("action"):
 		if target and coins == 0:
-			world.say("Kantong kosong. Pungut koin dulu.")
+			world.say("Kantong kosong. Kumpulkan Doa dulu.")
 		elif state == State.GROUND:
 			_try_wave()
 
@@ -107,9 +112,9 @@ func _try_wave() -> void:
 	elif _wave_cd > 0.0:
 		world.say("Lambaian belum siap (%d dtk)" % ceili(_wave_cd))
 	else:
-		_wave_cd = WAVE_COOLDOWN
+		_wave_cd = wave_cooldown
 		_wave_t = 0.8
-		shop.lucky_wave()
+		shop.lucky_wave(wave_bonus)
 		world.sfx.play("wave")
 		world.say("Lambaian Rezeki!")
 

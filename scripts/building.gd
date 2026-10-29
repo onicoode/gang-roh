@@ -210,8 +210,8 @@ func evict() -> void:
 	rebuild()
 
 
-func lucky_wave() -> void:
-	for i in 3:
+func lucky_wave(n: int = 3) -> void:
+	for i in n:
 		world.spawn_coin(Vector2(door_x(), -2))
 
 
