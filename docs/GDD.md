@@ -24,7 +24,7 @@ gang tumbuh dari warung satu lantai menjadi deretan gedung bertingkat.
 ## Kontrol
 Kiri/kanan, atas/bawah (tangga), satu tombol aksi. Di HP: swipe ke arah tujuan lalu tahan (di mana saja kecuali UI), sentuh-tahan di tempat/ketuk = aksi; mendukung portrait dan landscape.
 
-## Rencana v0.4: yōkai kesialan & pasukan roh
+## v0.4: yōkai kesialan & pasukan roh (tahap 1 ✅: Gaki + Tsukumogami, developer siang)
 - **Siang**: developer (ancaman ekonomi) — pasang papan DIJUAL di petak kosong/bobrok; usir dengan Doa, cabut papan.
 - **Malam**: yōkai kesialan (Kegare) datang dari ujung gang dan dari sarang (bangunan bobrok/tergusur):
   - Gaki (hantu lapar): bergerombol, lemah, memakan Doa di jalan.

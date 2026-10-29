@@ -54,8 +54,9 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	hud_month.text = "Bulan %d / %d  ·  %s" % [world.month, world.MONTHS, world.phase_name()]
 	hud_coins.text = "%d / %d" % [world.player.coins, world.player.max_coins]
-	var devs: int = world.dev_count()
-	_warn.visible = devs > 0 and not world.ended
+	var threat: String = world.threat_text()
+	_warn.text = threat
+	_warn.visible = threat != "" and not world.ended
 	if _warn.visible:
 		_blink += delta
 		_warn.modulate.a = 0.55 + 0.45 * absf(sin(_blink * 4.0))

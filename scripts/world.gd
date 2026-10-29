@@ -1,8 +1,10 @@
 extends Node2D
 ## Gang: deretan petak bangunan, kuil kecil, koin, dan siklus hari.
 ## 1 hari di game = 1 bulan bagi manusia. Sesi pendek = 12 bulan.
-## Mulai bulan 2, developer rakus datang tiap malam (firasat muncul sore hari).
-## Kalah kalau developer menguasai LOSE_PLOTS petak (kuil ikut tergusur).
+## Siang (mulai bulan 2): developer rakus memasang papan DIJUAL. Kalah kalau developer
+## menguasai LOSE_PLOTS petak (kuil ikut tergusur).
+## Malam: Tsukumogami bangun dari bangunan terawat; yokai Gaki datang dari ujung gang
+## dan dari sarang (bangunan bobrok / petak tergusur).
 
 signal message(text: String)
 signal session_ended
@@ -15,15 +17,22 @@ const START_SHOP_PLOT := 2
 const MONTHS := 12
 const DAY_LENGTH := 120.0 # detik nyata per bulan
 const LOSE_PLOTS := 4
-const WARN_T := 0.55 # sore: firasat developer
-const DEV_T := 0.72 # malam: developer datang
-const BOTH_SIDES_MONTH := 7 # mulai bulan ini developer datang dari dua ujung
+const WARN_T := 0.08 # pagi: firasat developer
+const DEV_T := 0.18 # siang: developer datang
+const DEV_LEAVE_T := 0.68 # sore: developer pulang
+const BOTH_SIDES_MONTH := 7 # mulai bulan ini musuh datang dari dua ujung
+const SPIRIT_T := 0.7 # malam: Tsukumogami bangun
+const YOKAI_WARN_T := 0.58 # sore: firasat yokai
+const YOKAI_T := 0.72 # malam: yokai mulai datang
+const YOKAI_GAP := 2.5 # detik antar kedatangan Gaki
 
 const BuildingScene := preload("res://scenes/building.tscn")
 const CoinScene := preload("res://scenes/coin.tscn")
 const Building := preload("res://scripts/building.gd")
 const DevScript := preload("res://scripts/developer.gd")
 const GateScript := preload("res://scripts/gate.gd")
+const GakiScript := preload("res://scripts/gaki.gd")
+const SpiritScript := preload("res://scripts/spirit.gd")
 const SfxScript := preload("res://scripts/sfx.gd")
 
 # Warna langit sepanjang hari (0 = pagi, 1 = pagi berikutnya)
@@ -43,6 +52,8 @@ var gates: Array = [] # [kiri, kanan]
 var sfx: Node
 
 var warn_t := WARN_T
+var yokai_warn_t := YOKAI_WARN_T
+var kills := 0 # yokai dikalahkan sesi ini
 var _focus: Node = null # target koin yang lingkarannya sedang ditampilkan
 var _dev_warned := false
 var _dev_spawned := false
@@ -51,6 +62,13 @@ var _shake := 0.0
 var _cam: Camera2D
 var _actors: Node2D
 var _devs: Node2D
+var _spirits: Node2D
+var _yokai: Node2D
+var _night_started := false
+var _yokai_warned := false
+var _yokai_queue: Array = [] # [{"x": float, "dir": int, "gate": Node}]
+var _yokai_timer := 0.0
+var _stolen := 0 # persembahan dicuri Gaki malam ini
 var _fx: Node2D
 
 @onready var sky: ColorRect = $SkyLayer/Sky
@@ -74,6 +92,10 @@ func _ready() -> void:
 	tinted.move_child(_actors, player.get_index())
 	_devs = Node2D.new()
 	_actors.add_child(_devs)
+	_spirits = Node2D.new()
+	_actors.add_child(_spirits)
+	_yokai = Node2D.new()
+	_actors.add_child(_yokai)
 	_fx = Node2D.new()
 	add_child(_fx)
 	for side in [-1, 1]:
@@ -122,6 +144,7 @@ func _process(delta: float) -> void:
 		if ended:
 			return
 	_update_developers()
+	_update_night(delta)
 	_update_focus()
 	_update_shake(delta)
 	_apply_time()
@@ -164,6 +187,9 @@ func build_target(cat: Node2D) -> Node:
 	var on_ground: bool = cat.state == cat.State.GROUND
 	var on_roof: bool = cat.state == cat.State.ROOF
 	if on_ground:
+		var y: Node = nearest_yokai(cat.position.x, 12.0)
+		if y != null:
+			return y
 		for d in _devs.get_children():
 			if d.can_take_coin() and absf(cat.position.x - d.position.x) < 14.0:
 				return d
@@ -186,6 +212,70 @@ func build_target(cat: Node2D) -> Node:
 
 func dev_count() -> int:
 	return _devs.get_child_count()
+
+
+func yokai_count() -> int:
+	var n := 0
+	for y in _yokai.get_children():
+		if not y.leaving:
+			n += 1
+	return n + _yokai_queue.size()
+
+
+## Teks peringatan HUD ("" = aman).
+func threat_text() -> String:
+	if yokai_count() > 0:
+		return "! Yokai di gang !"
+	if dev_count() > 0:
+		return "! Developer di gang !"
+	return ""
+
+
+func nearest_yokai(x: float, r: float) -> Node:
+	var best: Node = null
+	var best_d := r
+	for y in _yokai.get_children():
+		if y.dead or y.leaving:
+			continue
+		var d := absf(y.position.x - x)
+		if d <= best_d:
+			best = y
+			best_d = d
+	return best
+
+
+func nearest_spirit(x: float, r: float) -> Node:
+	var best: Node = null
+	var best_d := r
+	for s in _spirits.get_children():
+		if s.dead or s.leaving:
+			continue
+		var d := absf(s.position.x - x)
+		if d <= best_d:
+			best = s
+			best_d = d
+	return best
+
+
+## Doa yang sudah diam di tanah dekat x (untuk dimakan Gaki).
+func coin_near(x: float, r: float) -> Node:
+	for c in coins_node.get_children():
+		if c.is_settled() and not c.is_queued_for_deletion() and absf(c.position.x - x) < r:
+			return c
+	return null
+
+
+func gaki_at_shrine() -> void:
+	_stolen += 1
+	sfx.play("alert")
+	say("Gaki mencuri persembahan kuil! (%d)" % _stolen)
+
+
+func yokai_defeated(y: Node) -> void:
+	kills += 1
+	spawn_coin(y.position + Vector2(0, -6))
+	pop_text(y.position + Vector2(0, -16), "musnah!", Color("ffd36a"))
+	sfx.play("poof")
 
 
 func dev_wants(b: Node) -> bool:
@@ -280,7 +370,8 @@ func _apply_upgrades() -> void:
 	player.max_coins = 8 + 2 * Save.level("kantong")
 	player.coins = mini(3 + 2 * Save.level("berkah"), player.max_coins)
 	var firasat: int = Save.level("firasat")
-	warn_t = WARN_T - 0.04 * firasat
+	warn_t = maxf(WARN_T - 0.02 * firasat, 0.0)
+	yokai_warn_t = YOKAI_WARN_T - 0.04 * firasat
 	for g in gates:
 		g.hp = floori(firasat / 2.0)
 		g.queue_redraw()
@@ -298,12 +389,12 @@ func summary() -> String:
 		if b.floors > 0:
 			shops += 1
 		tallest = maxi(tallest, b.floors)
-	var ruined := 0
+	var ruined := 0 # bangunan bobrok
 	for b in buildings:
 		if b.floors > 0 and b.condition < Building.RUIN:
 			ruined += 1
-	return "Toko berdiri: %d\nTotal lantai: %d\nGedung tertinggi: %d lantai\nBangunan bobrok: %d\nPetak digusur: %d" % [
-		shops, total, tallest, ruined, owned_count()]
+	return "Toko berdiri: %d\nTotal lantai: %d\nGedung tertinggi: %d lantai\nBangunan bobrok: %d\nPetak digusur: %d\nYokai dikalahkan: %d" % [
+		shops, total, tallest, ruined, owned_count(), kills]
 
 
 # ---------------------------------------------------------------- waktu
@@ -316,8 +407,14 @@ func _new_month() -> void:
 	month += 1
 	_dev_warned = false
 	_dev_spawned = false
-	for d in _devs.get_children():
-		d.leave() # pagi: developer pulang
+	# fajar: yokai & Tsukumogami memudar
+	_night_started = false
+	_yokai_warned = false
+	_yokai_queue.clear()
+	for y in _yokai.get_children():
+		y.fade()
+	for s in _spirits.get_children():
+		s.fade()
 	for b in buildings:
 		b.on_new_month()
 	_shrine_offering()
@@ -330,11 +427,14 @@ func _lose() -> void:
 
 
 func _update_developers() -> void:
+	if day_t >= DEV_LEAVE_T:
+		for d in _devs.get_children():
+			d.leave() # sore: developer pulang
+		return
 	if day_t >= warn_t and not _dev_warned:
 		_dev_warned = true
 		_dev_sides.clear()
 		if month == 1:
-			say("Mulai bulan depan developer rakus datang tiap malam. Pasang pagar di ujung gang!")
 			return
 		if month >= BOTH_SIDES_MONTH:
 			_dev_sides.append(-1)
@@ -352,12 +452,83 @@ func _update_developers() -> void:
 			var d = DevScript.new()
 			d.world = self
 			d.dir = 1 if side < 0 else -1
-			d.gate = gates[0] if side < 0 else gates[1]
+			d.gate = null # pagar roh hanya menahan yokai
 			d.bribe_cost = 2 + int(month / 3.0)
 			d.position = Vector2(-8.0 if side < 0 else world_w + 8.0, 0)
 			_devs.add_child(d)
 		if not _dev_sides.is_empty():
 			say("Developer datang!")
+
+
+## Malam: Tsukumogami bangun, Gaki datang bergelombang.
+func _update_night(delta: float) -> void:
+	if day_t >= yokai_warn_t and not _yokai_warned:
+		_yokai_warned = true
+		_plan_yokai()
+	if day_t >= SPIRIT_T and not _night_started:
+		_night_started = true
+		_spawn_spirits()
+	if day_t >= YOKAI_T and not _yokai_queue.is_empty():
+		_yokai_timer -= delta
+		if _yokai_timer <= 0.0:
+			_yokai_timer = YOKAI_GAP
+			var q: Dictionary = _yokai_queue.pop_front()
+			var g = GakiScript.new()
+			g.world = self
+			g.dir = int(q["dir"])
+			g.gate = q["gate"]
+			g.position = Vector2(float(q["x"]), 0)
+			_yokai.add_child(g)
+
+
+func _plan_yokai() -> void:
+	_yokai_queue.clear()
+	_yokai_timer = 0.0
+	var sides: Array[int] = []
+	if month >= BOTH_SIDES_MONTH:
+		sides.append(-1)
+		sides.append(1)
+	else:
+		sides.append(-1 if randf() < 0.5 else 1)
+	var n := mini(1 + month, 14)
+	for i in n:
+		var side: int = sides[i % sides.size()]
+		var x: float = -8.0 if side < 0 else world_w + 8.0
+		_yokai_queue.append({"x": x, "dir": -side, "gate": gates[0] if side < 0 else gates[1]})
+	# sarang: tiap bangunan bobrok / petak tergusur melahirkan 1 Gaki (tanpa pagar)
+	var nests := 0
+	for b in buildings:
+		if b.owned or (b.floors > 0 and b.condition < Building.RUIN):
+			nests += 1
+			_yokai_queue.append({"x": b.center_x(), "dir": 1, "gate": null})
+	_yokai_queue.shuffle()
+	var where: String = "kedua ujung" if sides.size() == 2 else ("ujung kiri" if sides[0] < 0 else "ujung kanan")
+	var extra: String = " dan %d sarang Kegare" % nests if nests > 0 else ""
+	say("Kegare menebal... %d Gaki akan datang dari %s gang%s." % [n + nests, where, extra])
+	sfx.play("alert")
+
+
+## Tiap bangunan melahirkan Tsukumogami: terawat = 1 per lantai, kusam = separuh, bobrok = 0.
+func _spawn_spirits() -> void:
+	var total := 0
+	for b in buildings:
+		if b.floors <= 0 or b.owned:
+			continue
+		var n: int = b.floors
+		if b.condition < Building.RUIN:
+			n = 0
+		elif b.condition < Building.DULL:
+			n = ceili(b.floors / 2.0)
+		for i in n:
+			var s = SpiritScript.new()
+			s.world = self
+			s.kind = i % 3
+			s.home_x = b.center_x()
+			s.position = Vector2(b.door_x() - 4.0 * i, 0)
+			_spirits.add_child(s)
+			total += 1
+	if total > 0:
+		say("%d Tsukumogami bangun menjaga gang." % total)
 
 
 func _update_focus() -> void:
@@ -383,6 +554,8 @@ func _shrine_offering() -> void:
 	for b in buildings:
 		if b.floors > 0:
 			n += 1
+	n = maxi(n - _stolen, 0)
+	_stolen = 0
 	for i in n:
 		spawn_coin(shrine.position + Vector2(0, -6))
 

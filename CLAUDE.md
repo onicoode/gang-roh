@@ -31,8 +31,10 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 | `scripts/swipe_input.gd` | Kontrol sentuh tak terlihat: swipe+tahan = gerak, sentuh diam/ketuk = aksi (`_unhandled_input`, UI makan sentuhan dulu) |
 | `scenes/world.tscn` + `scripts/world.gd` | Gang: petak, kuil, siklus hari/bulan, langit, parallax, koin, jadwal developer, target koin, kalah, shake, teks melayang |
 | `scripts/building.gd` | Satu petak: lantai, kondisi (menua), papan DIJUAL/digusur, tugas koin (`Job`: bangun/rawat/cabut/rebut), sprite, overlay |
-| `scripts/developer.gd` | Developer rakus (digambar dengan `_draw`): dorong pagar, pasang papan, gusur, terima uang rokok |
-| `scripts/gate.gd` | Pagar bambu di ujung gang (hp 0–4, tanam koin = +1) |
+| `scripts/developer.gd` | Developer rakus (siang, digambar `_draw`): pasang papan DIJUAL, gusur, terima uang rokok |
+| `scripts/gaki.gd` | Yokai Gaki (malam): makan Doa di jalan, pukul pagar & Tsukumogami, curi persembahan kuil; HP 3 |
+| `scripts/spirit.gd` | Tsukumogami (pasukan): Bakezori/Karakasa/Chochin, lahir dari bangunan tiap malam, jaga rumah |
+| `scripts/gate.gd` | Pagar roh di ujung gang, menahan yokai (hp 0–4, tanam Doa = +1) |
 | `scripts/sfx.gd` | Efek suara dibuat dari kode (tanpa file audio): `world.sfx.play("pickup")` |
 | `scripts/cat.gd` | Pemain: state GROUND/CLIMB/ROOF, tanam koin (tahan aksi), Lambaian Rezeki |
 | `scripts/coin.gd` | Koin memantul + dipungut |
@@ -57,6 +59,7 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
   kalah bila 4 petak digusur, bangunan menua (kusam/bobrok, rawat dengan koin), suara sintetis, shake, teks "+1".
 - v0.3: menu utama, layar Persiapan Roh (5 kemampuan, Ema, tersimpan), jeda, HUD baru,
   sumber daya koin → **Doa** (bola cahaya; variabel kode masih bernama `coins`).
-- Rencana berikut: "pasukan" — warga ronda dari lantai apartemen, Pos Ronda, kuil bisa di-upgrade
-  memanggil roh pelindung (Kitsune-bi, Komainu, Kodama), developer punya nyali (HP) & beberapa jenis.
+- v0.4 tahap 1: developer pindah ke siang; malam = Gaki (dari ujung + sarang bangunan bobrok/tergusur)
+  vs Tsukumogami (terawat 1/lantai, kusam separuh, bobrok 0). Lempar Doa ke Gaki = 2 dmg.
+- Tahap berikut: kuil bisa di-upgrade (Kitsune-bi, Komainu, Kodama), lalu Binbogami, Noppera-bo, Oni.
 - Belum: bencana, roh lain (Tanuki, Komainu), Ema/upgrade, pilihan sesi, suara.

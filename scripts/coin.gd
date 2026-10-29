@@ -10,6 +10,10 @@ var _t := 0.0
 @onready var sprite: Sprite2D = $Sprite2D
 
 
+func is_settled() -> bool:
+	return _settled
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	sprite.frame = int(_t * 8.0) % 4
