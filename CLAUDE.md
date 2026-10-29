@@ -23,7 +23,10 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 ## Struktur
 | Path | Isi |
 |---|---|
-| `scenes/main.tscn` + `scripts/main.gd` | SubViewport pixel-perfect (sisi terpendek ≈180 px game), HUD, panel akhir sesi |
+| `scenes/menu.tscn` + `scripts/menu.gd` | Scene awal: menu utama + layar Persiapan Roh (upgrade dengan Ema). UI dibuat dari kode |
+| `scripts/save.gd` | Autoload `Save`: Ema, level kemampuan (`SKILLS`), simpan ke `user://save.cfg`, `finish_session()` |
+| `scripts/ui_theme.gd` | Tema UI bersama (tombol/panel/warna) |
+| `scenes/main.tscn` + `scripts/main.gd` | Game: SubViewport pixel-perfect (sisi terpendek ≈180 px game), HUD Doa, jeda (tombol II/Back/Esc), panel akhir + Ema |
 | `scripts/swipe_input.gd` | Kontrol sentuh tak terlihat: swipe+tahan = gerak, sentuh diam/ketuk = aksi (`_unhandled_input`, UI makan sentuhan dulu) |
 | `scenes/world.tscn` + `scripts/world.gd` | Gang: petak, kuil, siklus hari/bulan, langit, parallax, koin, jadwal developer, target koin, kalah, shake, teks melayang |
 | `scripts/building.gd` | Satu petak: lantai, kondisi (menua), papan DIJUAL/digusur, tugas koin (`Job`: bangun/rawat/cabut/rebut), sprite, overlay |
@@ -41,6 +44,7 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 
 ## Tes lokal (PC)
 - Error check: `Godot_console.exe --headless --path . --quit-after 300 -- --demo`
+- Argumen debug apa pun membuat menu langsung masuk game; `-- --menu` = uji menu.
 - Argumen debug: `-- --demo` (gedung acak bertingkat), `--time=0.8` (jam: 0 pagi … 0.75 malam),
   `--month=8` (bulan awal), `--speed=10` (percepat waktu).
 - CI juga jalan di setiap PR ke `main` (cek error + build, tanpa deploy).
@@ -50,4 +54,8 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
   kontrol sentuh swipe (tanpa tombol), layout portrait/landscape, ringkasan akhir sesi.
 - v0.2: developer rakus (malam, mulai bulan 2; dua ujung mulai bulan 7), pagar, uang rokok, papan DIJUAL → gusur,
   kalah bila 4 petak digusur, bangunan menua (kusam/bobrok, rawat dengan koin), suara sintetis, shake, teks "+1".
+- v0.3: menu utama, layar Persiapan Roh (5 kemampuan, Ema, tersimpan), jeda, HUD baru,
+  sumber daya koin → **Doa** (bola cahaya; variabel kode masih bernama `coins`).
+- Rencana berikut: "pasukan" — warga ronda dari lantai apartemen, Pos Ronda, kuil bisa di-upgrade
+  memanggil roh pelindung (Kitsune-bi, Komainu, Kodama), developer punya nyali (HP) & beberapa jenis.
 - Belum: bencana, roh lain (Tanuki, Komainu), Ema/upgrade, pilihan sesi, suara.

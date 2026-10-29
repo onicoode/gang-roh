@@ -45,14 +45,21 @@ Kalah: kuil tergusur (Ema tetap didapat, dikurangi).
 | Sedang | 3 tahun | 36 | Ema ×1,5, 1 bencana besar |
 | Panjang | 5 tahun | 60 | Ema ×2, peluang unlock langka |
 
-## Progres permanen
-Mata uang **Ema** (papan doa) dari hasil sesi.
-- Kemampuan umum (per karakter): Langkah, Kantong, Firasat, Berkah, Pesona.
+## Sumber daya
+- **Doa** (dalam sesi): bola cahaya dari warga yang bahagia (toko, sewa, kuil, Lambaian Rezeki).
+  Dipakai untuk membangun, merawat, pagar, dan uang rokok.
+- **Ema** (permanen): didapat di akhir sesi = bulan dilalui + total lantai (+10 kalau bertahan setahun;
+  dibagi dua kalau kalah).
+
+## Progres permanen (layar Persiapan Roh, sebelum tiap sesi)
+- Langkah: +10% kecepatan/lv. Kantong: +2 kapasitas Doa/lv. Berkah: +2 Doa awal/lv.
+  Firasat: firasat developer lebih awal, pagar awal lebih kuat. Pesona: Lambaian lebih sering & lebih banyak Doa.
+- Level 1–5, biaya naik tiap level.
 - Kemampuan unik per roh, level 1–5.
 
 ## Roadmap
 1. ✅ v0.1 inti: jalan, tangga, koin, bangun, siang/malam, kontrol HP.
 2. ✅ Developer rakus + bangunan menua.
-3. Menu: pilih roh & panjang sesi; layar akhir + Ema.
-4. Upgrade permanen + simpan data.
+3. ✅ Menu, layar akhir + Ema, upgrade permanen + simpan data (pilih roh & panjang sesi menyusul).
+4. "Pasukan": warga ronda, Pos Ronda, upgrade kuil + roh pelindung, nyali developer.
 5. Tanuki & Komainu, bencana, suara, polish.

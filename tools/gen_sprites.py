@@ -315,17 +315,18 @@ def laundry():
     return c
 
 
+DOA_CORE, DOA_MID, DOA_EDGE = rgb(250, 255, 255), rgb(160, 225, 255), rgb(96, 160, 240)
+
+
 def coin(frame):
+    """Doa: bola cahaya biru-putih yang berdenyut (4 frame, 6x6)."""
     c = Canvas(6, 6)
-    gold, gold_d, gold_l = rgb(240, 196, 72), rgb(186, 136, 40), rgb(255, 236, 150)
-    w = [3, 2, 0, 2][frame]
-    if w == 0:
-        c.rect(2, 0, 3, 5, gold_d)
-        return c
-    x0, x1 = 3 - w, 2 + w
-    c.rect(x0, 1, x1, 4, gold); c.rect(x0 + 1, 0, x1 - 1, 5, gold)
-    c.rect(x1, 1, x1, 4, gold_d)
-    c.set(x0 + 1, 1, gold_l)
+    edge = [DOA_EDGE, rgb(120, 185, 250), rgb(150, 210, 255), rgb(120, 185, 250)][frame]
+    c.rect(1, 1, 4, 4, edge); c.rect(2, 0, 3, 5, edge); c.rect(0, 2, 5, 3, edge)
+    c.rect(1, 2, 4, 3, DOA_MID); c.rect(2, 1, 3, 4, DOA_MID)
+    c.rect(2, 2, 3, 3, DOA_CORE)
+    if frame == 2:
+        c.set(2, 1, DOA_CORE)
     return c
 
 
@@ -335,8 +336,8 @@ def slots():
         c.set(x, 0, rgb(200, 200, 200, 200)); c.set(x, 4, rgb(200, 200, 200, 200))
     for y in (1, 2, 3):
         c.set(0, y, rgb(200, 200, 200, 200)); c.set(4, y, rgb(200, 200, 200, 200))
-    c.rect(6, 1, 8, 3, rgb(240, 196, 72)); c.rect(6, 0, 8, 0, rgb(240, 196, 72)); c.rect(5, 1, 5, 3, rgb(240, 196, 72))
-    c.rect(9, 1, 9, 3, rgb(186, 136, 40)); c.rect(6, 4, 8, 4, rgb(186, 136, 40))
+    c.rect(6, 0, 8, 4, DOA_EDGE); c.rect(5, 1, 9, 3, DOA_EDGE)
+    c.rect(6, 1, 8, 3, DOA_MID); c.set(7, 2, DOA_CORE)
     return c
 
 

@@ -1,5 +1,6 @@
 extends Node2D
-## Koin persembahan: memantul keluar dari pintu, lalu bisa dipungut kucing.
+## Doa warga (bola cahaya): memantul keluar dari pintu, lalu bisa dipungut kucing.
+## (Nama file/scene masih "coin" dari versi awal.)
 
 var velocity := Vector2.ZERO
 var world: Node = null
@@ -27,5 +28,5 @@ func _process(delta: float) -> void:
 	if _t > 0.3 and p.state == p.State.GROUND and absf(p.position.x - position.x) < 7.0 and p.coins < p.max_coins:
 		p.coins += 1
 		world.sfx.play("pickup")
-		world.pop_text(position + Vector2(0, -12), "+1", Color("ffd36a"))
+		world.pop_text(position + Vector2(0, -12), "+1", Color("b8ebff"))
 		queue_free()

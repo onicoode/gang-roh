@@ -49,6 +49,8 @@ jobs:
           godot --headless --quit-after 300 -- --demo 2>&1 | tee run.log
           # malam bulan 8, dipercepat: developer dari dua ujung ikut teruji
           godot --headless --fixed-fps 60 --quit-after 600 -- --demo --month=8 --time=0.71 --speed=10 2>&1 | tee -a run.log
+          # menu utama + layar persiapan (beli upgrade)
+          godot --headless --quit-after 120 -- --menu 2>&1 | tee -a run.log
           if grep -E "SCRIPT ERROR|Parse Error|Invalid call|Invalid access|Invalid assignment" run.log; then
             echo "::error::Ada error script, lihat log di atas"
             exit 1

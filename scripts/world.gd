@@ -42,6 +42,7 @@ var lost := false
 var gates: Array = [] # [kiri, kanan]
 var sfx: Node
 
+var warn_t := WARN_T
 var _focus: Node = null # target koin yang lingkarannya sedang ditampilkan
 var _dev_warned := false
 var _dev_spawned := false
@@ -105,6 +106,7 @@ func _ready() -> void:
 	_cam.limit_bottom = 40
 	_cam.limit_top = -480
 
+	_apply_upgrades()
 	_apply_debug_args()
 	_shrine_offering()
 	_apply_time()
@@ -216,7 +218,7 @@ func dev_claim(b: Node) -> void:
 	else:
 		b.put_sign()
 		sfx.play("alert")
-		say("Papan DIJUAL dipasang! Cabut (3 koin) sebelum developer kembali.")
+		say("Papan DIJUAL dipasang! Cabut (3 Doa) sebelum developer kembali.")
 
 
 func owned_count() -> int:
@@ -265,6 +267,28 @@ func spawn_coin(pos: Vector2) -> void:
 	coins_node.add_child(c)
 
 
+func total_floors() -> int:
+	var n := 0
+	for b in buildings:
+		n += b.floors
+	return n
+
+
+## Efek kemampuan permanen roh (dibeli di layar Persiapan dengan Ema).
+func _apply_upgrades() -> void:
+	player.speed_mult = 1.0 + 0.1 * Save.level("langkah")
+	player.max_coins = 8 + 2 * Save.level("kantong")
+	player.coins = mini(3 + 2 * Save.level("berkah"), player.max_coins)
+	var firasat: int = Save.level("firasat")
+	warn_t = WARN_T - 0.04 * firasat
+	for g in gates:
+		g.hp = floori(firasat / 2.0)
+		g.queue_redraw()
+	var pesona: int = Save.level("pesona")
+	player.wave_cooldown = player.WAVE_COOLDOWN - 2.5 * pesona
+	player.wave_bonus = 3 + floori(pesona / 2.0)
+
+
 func summary() -> String:
 	var total := 0
 	var shops := 0
@@ -306,7 +330,7 @@ func _lose() -> void:
 
 
 func _update_developers() -> void:
-	if day_t >= WARN_T and not _dev_warned:
+	if day_t >= warn_t and not _dev_warned:
 		_dev_warned = true
 		_dev_sides.clear()
 		if month == 1:

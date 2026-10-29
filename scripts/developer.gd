@@ -2,7 +2,7 @@ extends Node2D
 ## Developer rakus. Datang malam hari dari ujung gang, mengincar petak kosong
 ## atau bangunan bobrok, lalu memasang papan DIJUAL. Kalau papan itu masih ada
 ## saat dia datang lagi, petak digusur.
-## Cara mengusir: pagar di ujung gang, atau "uang rokok" (tanam koin di dekatnya).
+## Cara mengusir: pagar di ujung gang, atau "uang rokok" (tanam Doa di dekatnya).
 
 enum St { WALK, PUSH, WORK, LEAVE }
 
