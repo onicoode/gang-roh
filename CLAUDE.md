@@ -34,7 +34,8 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 | `scripts/developer.gd` | Developer rakus (siang, digambar `_draw`): pasang papan DIJUAL, gusur; disialkan roh (awan hujan) |
 | `scripts/warga.gd` | Warga: keluar rumah/datang dari ujung gang, berdoa di kuil pusat (2 Doa) atau hokora (1 Doa). Satu-satunya sumber Doa |
 | `scripts/gaki.gd` | Yokai Gaki (malam): makan Doa di jalan, pukul pagar & Tsukumogami, curi persembahan kuil; HP 3 |
-| `scripts/spirit.gd` | Tsukumogami (pasukan): Bakezori/Karakasa/Chochin, lahir dari bangunan tiap malam, jaga rumah |
+| `scripts/spirit.gd` | Pasukan roh (`STATS` per jenis): Tsukumogami Bakezori/Karakasa/Chochin (dari bangunan), Kitsune-bi & Komainu (dari kuil) |
+| `scripts/shrine.gd` | Kuil pusat: level 1–5 (upgrade dengan Doa, `COSTS`), hiasan, jumlah Kitsune-bi; Lv4 Kodama merawat, Lv5 aura |
 | `scripts/gate.gd` | Pagar roh di ujung gang, menahan yokai (hp 0–4, tanam Doa = +1) |
 | `scripts/sfx.gd` | Efek suara dibuat dari kode (tanpa file audio): `world.sfx.play("pickup")` |
 | `scripts/cat.gd` | Pemain: state GROUND/CLIMB/ROOF, pakai Doa (tahan aksi), Lambaian Rezeki (mendatangkan pengunjung) |
@@ -64,5 +65,7 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
   vs Tsukumogami (terawat 1/lantai, kusam separuh, bobrok 0). Lempar Doa ke Gaki = 2 dmg.
 - v0.5: Doa hanya dari warga yang berdoa (pengunjung kuil pagi + dari luar gang, penghuni tiap bangunan);
   hokora per bangunan (3 Doa); gelembung keinginan; tukang; developer disialkan. Toko/sewa tidak lagi memberi Doa.
-- Tahap berikut: kuil bisa di-upgrade (Kitsune-bi, Komainu, Kodama), lalu Binbogami, Noppera-bo, Oni.
+- v0.6: kuil bisa di-upgrade Lv1–5 (6/10/15/20 Doa): Kitsune-bi (Lv2+), Komainu di pagar (Lv3+),
+  Kodama merawat tiap pagi (Lv4+), aura (Lv5: pengunjung 3 Doa, roh +1 nyawa).
+- Tahap berikut: Binbogami, Noppera-bo, Oni (bos).
 - Belum: bencana, roh lain (Tanuki, Komainu), Ema/upgrade, pilihan sesi, suara.

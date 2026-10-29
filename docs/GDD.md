@@ -37,7 +37,9 @@ Kiri/kanan, atas/bawah (tangga), satu tombol aksi. Di HP: swipe ke arah tujuan l
 - **Pasukan roh**:
   - Tsukumogami (Karakasa payung, Chōchin lentera, Bakezōri sandal) lahir dari bangunan terawat;
     jumlah ∝ lantai. Bangun & rawat = tambah pasukan.
-  - Kuil bisa di-upgrade (Doa) memanggil roh: Kitsune-bi (serang jarak jauh), Komainu (penjaga gerbang), Kodama (penyembuh).
+  - Kuil bisa di-upgrade dengan Doa (✅ v0.6), Lv1–5, biaya 6/10/15/20:
+    Lv2 Kitsune-bi ×1 (Lv3 ×2, Lv4+ ×3) terbang menembak ke seluruh gang; Lv3 Komainu di kedua pagar (14 nyawa, 2 dmg);
+    Lv4 Kodama merawat semua bangunan +10 tiap pagi; Lv5 pengunjung kuil 3 Doa, semua roh +1 nyawa.
   - Kucing: Lambaian Rezeki mengusir yōkai lemah.
 - Yōkai punya HP; dikalahkan → menjatuhkan Doa.
 

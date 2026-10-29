@@ -4,18 +4,27 @@ extends Node2D
 ## - Bakezōri (sandal): cepat, serangan dekat.
 ## - Karakasa (payung): kuat menahan serangan, serangan dekat.
 ## - Chōchin (lentera): lemah, menembak api dari jauh.
+## Roh kuil (dipanggil kalau kuil di-upgrade):
+## - Kitsune-bi (api rubah): terbang ke seluruh gang, menembak dari jauh.
+## - Komainu (anjing singa batu): berjaga di pagar, sangat kuat & tahan banting.
 
-enum Kind { ZORI, KASA, CHOCHIN }
+enum Kind { ZORI, KASA, CHOCHIN, KITSUNE, KOMAINU }
 
-const LEASH := 56.0 # jarak maksimal dari rumah
-const AGGRO := 50.0 # jarak melihat yōkai
 
-## Kind: [hp, kecepatan, jangkauan, jeda serang]
+## Kind: [hp, kecepatan, jangkauan, jeda serang, kerusakan, jarak maks dari rumah, jarak lihat]
 const STATS := {
-	Kind.ZORI: [3, 26.0, 6.0, 0.8],
-	Kind.KASA: [6, 16.0, 7.0, 1.1],
-	Kind.CHOCHIN: [2, 14.0, 40.0, 1.6],
+	Kind.ZORI: [3, 26.0, 6.0, 0.8, 1, 56.0, 50.0],
+	Kind.KASA: [6, 16.0, 7.0, 1.1, 1, 56.0, 50.0],
+	Kind.CHOCHIN: [2, 14.0, 40.0, 1.6, 1, 56.0, 50.0],
+	Kind.KITSUNE: [4, 34.0, 44.0, 1.2, 1, 1000.0, 1000.0],
+	Kind.KOMAINU: [14, 10.0, 8.0, 1.0, 2, 14.0, 30.0],
 }
+
+const FOX := Color("7ad0ff")
+const FOX_L := Color("e8fbff")
+const STONE := Color("9a9a96")
+const STONE_D := Color("6a6a68")
+const STONE_L := Color("c4c4bc")
 
 const STRAW := Color("d8b878")
 const STRAW_D := Color("a0804a")
@@ -43,6 +52,9 @@ var _max_hp := 3
 var _speed := 20.0
 var _range := 6.0
 var _cd_time := 1.0
+var _dmg := 1
+var _leash := 56.0
+var _aggro := 50.0
 var _cd := 0.0
 var _dir := 1
 var _anim := 0.0
@@ -60,6 +72,12 @@ func _ready() -> void:
 	_speed = float(st[1])
 	_range = float(st[2])
 	_cd_time = float(st[3])
+	_dmg = int(st[4])
+	_leash = float(st[5])
+	_aggro = float(st[6])
+	if world.shrine_level() >= 5:
+		_max_hp += 1 # aura kuil
+		hp = _max_hp
 	_anim = randf() * 3.0
 	_wander = home_x + randf_range(-20.0, 20.0)
 	modulate.a = 0.0 # muncul perlahan
@@ -80,8 +98,8 @@ func _process(delta: float) -> void:
 		return
 	modulate.a = minf(modulate.a + delta * 2.0, 1.0)
 	_cd -= delta
-	var target: Node = world.nearest_yokai(position.x, AGGRO)
-	if target != null and absf(target.position.x - home_x) > LEASH + _range:
+	var target: Node = world.nearest_yokai(position.x, _aggro)
+	if target != null and absf(target.position.x - home_x) > _leash + _range:
 		target = null
 	if target != null:
 		var dx: float = target.position.x - position.x
@@ -94,7 +112,8 @@ func _process(delta: float) -> void:
 	else:
 		# berkeliling di sekitar rumah
 		if absf(_wander - position.x) < 2.0:
-			_wander = home_x + randf_range(-24.0, 24.0)
+			var r: float = minf(24.0, _leash)
+			_wander = home_x + randf_range(-r, r)
 		var d: float = _wander - position.x
 		_dir = 1 if d > 0.0 else -1
 		_move(_dir, delta * 0.5)
@@ -103,17 +122,17 @@ func _process(delta: float) -> void:
 
 func _move(dir: int, delta: float) -> void:
 	var nx := position.x + dir * _speed * delta
-	position.x = clampf(nx, home_x - LEASH, home_x + LEASH)
+	position.x = clampf(nx, home_x - _leash, home_x + _leash)
 	position.x = clampf(position.x, 4.0, float(world.world_w) - 4.0)
 	_moving = true
 
 
 func _attack(target: Node) -> void:
-	if kind == Kind.CHOCHIN:
+	if kind == Kind.CHOCHIN or kind == Kind.KITSUNE:
 		_bolt_t = 0.2
 		_bolt_to = target.position + Vector2(0, -6) - position
 		world.sfx.play("fire")
-	target.take_hit(1)
+	target.take_hit(_dmg)
 
 
 func take_hit(dmg: int) -> void:
@@ -136,7 +155,7 @@ func fade() -> void:
 
 func _draw() -> void:
 	var hop := 0.0
-	if kind != Kind.CHOCHIN and _moving:
+	if kind != Kind.CHOCHIN and kind != Kind.KITSUNE and _moving:
 		hop = -absf(sin(_anim * 10.0)) * 2.0
 	draw_rect(Rect2(-3, 0, 7, 1), SHADOW)
 	draw_set_transform(Vector2(0, roundf(hop)), 0.0, Vector2(_dir, 1.0))
@@ -148,6 +167,10 @@ func _draw() -> void:
 			_draw_kasa(fl)
 		Kind.CHOCHIN:
 			_draw_chochin(fl)
+		Kind.KITSUNE:
+			_draw_kitsune(fl)
+		Kind.KOMAINU:
+			_draw_komainu(fl)
 	draw_set_transform(Vector2.ZERO)
 	if _bolt_t > 0.0:
 		var a := Vector2(0, -8)
@@ -205,3 +228,30 @@ func _draw_chochin(fl: bool) -> void:
 	draw_rect(Rect2(1, by - 6, 1, 1), EYE)
 	draw_rect(Rect2(0, by - 4, 2, 1), EYE)
 	draw_rect(Rect2(1, by - 3, 1, 2), TONGUE)
+
+
+func _draw_kitsune(fl: bool) -> void:
+	# bola api biru melayang dengan ekor berkedip
+	var by := roundf(sin(_anim * 4.0) * 2.0) - 14.0
+	var flick: int = int(_anim * 8.0) % 3
+	draw_rect(Rect2(-5, by - 5, 10, 10), Color(0.5, 0.85, 1.0, 0.15))
+	draw_rect(Rect2(-6 - flick, by - 1, 3 + flick, 2), Color(0.5, 0.85, 1.0, 0.6))
+	draw_rect(Rect2(-2, by - 3, 5, 5), _c(FOX, fl))
+	draw_rect(Rect2(-1, by - 4, 3, 7), _c(FOX, fl))
+	draw_rect(Rect2(0, by - 2, 2, 3), _c(FOX_L, fl))
+	draw_rect(Rect2(1, by - 6 + (flick % 2), 1, 2), _c(FOX, fl))
+
+
+func _draw_komainu(fl: bool) -> void:
+	# anjing singa batu duduk, surai keriting
+	draw_rect(Rect2(-5, -2, 10, 2), _c(STONE_D, fl)) # alas
+	draw_rect(Rect2(-4, -7, 6, 5), _c(STONE, fl)) # badan
+	draw_rect(Rect2(-5, -6, 2, 3), _c(STONE_D, fl)) # ekor
+	draw_rect(Rect2(1, -12, 5, 5), _c(STONE, fl)) # kepala
+	draw_rect(Rect2(0, -13, 4, 2), _c(STONE_D, fl)) # surai
+	draw_rect(Rect2(-1, -11, 2, 4), _c(STONE_D, fl))
+	draw_rect(Rect2(4, -11, 1, 1), EYE)
+	draw_rect(Rect2(4, -8, 2, 1), _c(STONE_L, fl)) # mulut
+	draw_rect(Rect2(2, -4, 2, 2), _c(STONE_L, fl)) # kaki depan
+	if _cd > _cd_time - 0.2:
+		draw_rect(Rect2(6, -10, 2, 1), Color("ffd890")) # auman

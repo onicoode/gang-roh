@@ -39,6 +39,7 @@ const GateScript := preload("res://scripts/gate.gd")
 const GakiScript := preload("res://scripts/gaki.gd")
 const SpiritScript := preload("res://scripts/spirit.gd")
 const WargaScript := preload("res://scripts/warga.gd")
+const ShrineScript := preload("res://scripts/shrine.gd")
 const SfxScript := preload("res://scripts/sfx.gd")
 
 # Warna langit sepanjang hari (0 = pagi, 1 = pagi berikutnya)
@@ -55,6 +56,7 @@ var day_t := 0.0
 var ended := false
 var lost := false
 var gates: Array = [] # [kiri, kanan]
+var shrine_up: Node2D # kuil pusat yang bisa di-upgrade (hiasan + level)
 var sfx: Node
 
 var warn_t := WARN_T
@@ -119,6 +121,11 @@ func _ready() -> void:
 
 	street.region_rect = Rect2(0, 0, world_w, 40)
 	shrine.position = Vector2(MARGIN + SHRINE_PLOT * PLOT_W + PLOT_W / 2.0, 0)
+	shrine_up = ShrineScript.new()
+	shrine_up.world = self
+	shrine_up.position = shrine.position
+	tinted.add_child(shrine_up)
+	tinted.move_child(shrine_up, shrine.get_index() + 1)
 
 	for i in N_PLOTS:
 		if i == SHRINE_PLOT:
@@ -209,6 +216,8 @@ func build_target(cat: Node2D) -> Node:
 		for g in gates:
 			if g.can_take_coin() and absf(cat.position.x - g.position.x) < 14.0:
 				return g
+		if shrine_up.can_take_coin() and absf(cat.position.x - shrine.position.x) < 12.0:
+			return shrine_up
 	for b in buildings:
 		var j: int = Building.Job.NONE
 		if on_ground and absf(cat.position.x - b.center_x()) < 18.0:
@@ -284,6 +293,15 @@ func gaki_at_shrine() -> void:
 	say("Gaki mengotori kuil! Besok pagi pengunjung berkurang. (%d)" % _stolen)
 
 
+func shrine_level() -> int:
+	return shrine_up.level if shrine_up else 1
+
+
+## Doa per pengunjung kuil pusat.
+func shrine_doa() -> int:
+	return 3 if shrine_level() >= 5 else 2
+
+
 func prayer_time() -> bool:
 	return day_t < PRAYER_END_T and not ended
 
@@ -303,7 +321,7 @@ func send_worshipper(b: Node, guest: bool = false) -> void:
 		w.amount = 1
 	else:
 		w.spot_x = shrine.position.x
-		w.amount = 2
+		w.amount = shrine_doa()
 	_warga.add_child(w)
 
 
@@ -317,7 +335,7 @@ func _send_visitor() -> void:
 	w.start_x = x
 	w.position = Vector2(x, 0)
 	w.spot_x = shrine.position.x
-	w.amount = 2
+	w.amount = shrine_doa()
 	w.from_edge = true
 	_warga.add_child(w)
 
@@ -459,8 +477,8 @@ func summary() -> String:
 	for b in buildings:
 		if b.floors > 0 and b.condition < Building.RUIN:
 			ruined += 1
-	return "Toko berdiri: %d\nTotal lantai: %d\nGedung tertinggi: %d lantai\nBangunan bobrok: %d\nPetak digusur: %d\nYokai dikalahkan: %d" % [
-		shops, total, tallest, ruined, owned_count(), kills]
+	return "Toko berdiri: %d\nTotal lantai: %d\nGedung tertinggi: %d lantai\nBangunan bobrok: %d\nPetak digusur: %d\nYokai dikalahkan: %d\nKuil: Lv %d" % [
+		shops, total, tallest, ruined, owned_count(), kills, shrine_level()]
 
 
 # ---------------------------------------------------------------- waktu
@@ -483,7 +501,16 @@ func _new_month() -> void:
 		s.fade()
 	for b in buildings:
 		b.on_new_month()
+	if shrine_level() >= 4:
+		# Kodama merawat bangunan
+		for b in buildings:
+			if b.floors > 0 and not b.owned and b.condition < 100.0:
+				b.condition = minf(b.condition + 10.0, 100.0)
+				b.rebuild()
+		say("Kodama merawat bangunan-bangunan gang.")
 	_shrine_offering()
+	if month == 2:
+		say("Tips: persembahkan Doa di kuil pusat untuk memanggil roh pelindung (Kitsune-bi, Komainu).")
 
 
 func _lose() -> void:
@@ -593,8 +620,29 @@ func _spawn_spirits() -> void:
 			s.position = Vector2(b.door_x() - 4.0 * i, 0)
 			_spirits.add_child(s)
 			total += 1
-	if total > 0:
-		say("%d Tsukumogami bangun menjaga gang." % total)
+	# roh kuil
+	var foxes: int = shrine_up.fox_count()
+	for i in foxes:
+		_add_spirit(SpiritScript.Kind.KITSUNE, shrine.position.x, shrine.position.x + (i - 1) * 8.0)
+	if shrine_level() >= 3:
+		_add_spirit(SpiritScript.Kind.KOMAINU, gates[0].position.x + 12.0, gates[0].position.x + 12.0)
+		_add_spirit(SpiritScript.Kind.KOMAINU, gates[1].position.x - 12.0, gates[1].position.x - 12.0)
+	var extra: String = ""
+	if foxes > 0:
+		extra = ", %d Kitsune-bi" % foxes
+	if shrine_level() >= 3:
+		extra += ", 2 Komainu"
+	if total > 0 or extra != "":
+		say("%d Tsukumogami bangun menjaga gang%s." % [total, extra])
+
+
+func _add_spirit(kind: int, home: float, x: float) -> void:
+	var s = SpiritScript.new()
+	s.world = self
+	s.kind = kind
+	s.home_x = home
+	s.position = Vector2(x, 0)
+	_spirits.add_child(s)
 
 
 func _update_focus() -> void:
@@ -669,6 +717,7 @@ func _apply_debug_args() -> void:
 			buildings[3].rebuild()
 			gates[0].hp = 2
 			gates[0].queue_redraw()
+			shrine_up.level = 3
 		elif arg.begins_with("--time="):
 			day_t = float(arg.substr(7))
 		elif arg.begins_with("--month="):
