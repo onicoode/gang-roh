@@ -15,6 +15,7 @@ var _msg_t := 0.0
 @onready var hud_coins: Label = $UI/Coins
 @onready var message: Label = $UI/Message
 @onready var end_panel: PanelContainer = $UI/EndPanel
+@onready var end_title: Label = $UI/EndPanel/VBox/Title
 @onready var end_label: Label = $UI/EndPanel/VBox/Summary
 @onready var restart_btn: Button = $UI/EndPanel/VBox/Restart
 
@@ -30,7 +31,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	hud_month.text = "Bulan %d / %d  ·  %s" % [world.month, world.MONTHS, world.phase_name()]
+	var warn: String = "  ·  DEVELOPER!" if world.dev_count() > 0 else ""
+	hud_month.text = "Bulan %d / %d  ·  %s%s" % [world.month, world.MONTHS, world.phase_name(), warn]
 	hud_coins.text = "Koin: %d / %d" % [world.player.coins, world.player.max_coins]
 	_msg_t -= delta
 	message.modulate.a = clampf(_msg_t, 0.0, 1.0)
@@ -56,6 +58,7 @@ func _layout() -> void:
 
 
 func _on_session_ended() -> void:
+	end_title.text = "Gang tergusur... kuil ikut dibongkar." if world.lost else "Satu tahun berlalu..."
 	end_label.text = world.summary()
 	end_panel.visible = true
 	_layout()

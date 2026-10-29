@@ -25,8 +25,11 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 |---|---|
 | `scenes/main.tscn` + `scripts/main.gd` | SubViewport pixel-perfect (sisi terpendek ≈180 px game), HUD, panel akhir sesi |
 | `scripts/swipe_input.gd` | Kontrol sentuh tak terlihat: swipe+tahan = gerak, sentuh diam/ketuk = aksi (`_unhandled_input`, UI makan sentuhan dulu) |
-| `scenes/world.tscn` + `scripts/world.gd` | Gang: petak, kuil, siklus hari/bulan, warna langit, parallax, spawn koin |
-| `scripts/building.gd` | Satu petak: lantai, biaya, konstruksi, sprite toko/apartemen/atap/tangga, slot koin |
+| `scenes/world.tscn` + `scripts/world.gd` | Gang: petak, kuil, siklus hari/bulan, langit, parallax, koin, jadwal developer, target koin, kalah, shake, teks melayang |
+| `scripts/building.gd` | Satu petak: lantai, kondisi (menua), papan DIJUAL/digusur, tugas koin (`Job`: bangun/rawat/cabut/rebut), sprite, overlay |
+| `scripts/developer.gd` | Developer rakus (digambar dengan `_draw`): dorong pagar, pasang papan, gusur, terima uang rokok |
+| `scripts/gate.gd` | Pagar bambu di ujung gang (hp 0–4, tanam koin = +1) |
+| `scripts/sfx.gd` | Efek suara dibuat dari kode (tanpa file audio): `world.sfx.play("pickup")` |
 | `scripts/cat.gd` | Pemain: state GROUND/CLIMB/ROOF, tanam koin (tahan aksi), Lambaian Rezeki |
 | `scripts/coin.gd` | Koin memantul + dipungut |
 | `shaders/` | `sky` (gradasi), `wind` (goyang jemuran/tanaman) |
@@ -38,9 +41,13 @@ Pemilik proyek berbahasa Indonesia, pemula Godot/GitHub: jelaskan singkat dan se
 
 ## Tes lokal (PC)
 - Error check: `Godot_console.exe --headless --path . --quit-after 300 -- --demo`
-- Argumen debug: `-- --demo` (gedung acak bertingkat), `--time=0.8` (jam: 0 pagi … 0.75 malam).
+- Argumen debug: `-- --demo` (gedung acak bertingkat), `--time=0.8` (jam: 0 pagi … 0.75 malam),
+  `--month=8` (bulan awal), `--speed=10` (percepat waktu).
+- CI juga jalan di setiap PR ke `main` (cek error + build, tanpa deploy).
 
 ## Status (update di akhir tiap sesi)
 - v0.1 prototipe: jalan, tangga, atap, koin, bangun 0→5 lantai, siang/malam, lampu, AC, jemuran, awan,
   kontrol sentuh swipe (tanpa tombol), layout portrait/landscape, ringkasan akhir sesi.
-- Belum: developer rakus, bangunan menua, bencana, roh lain (Tanuki, Komainu), Ema/upgrade, pilihan sesi, suara.
+- v0.2: developer rakus (malam, mulai bulan 2; dua ujung mulai bulan 7), pagar, uang rokok, papan DIJUAL → gusur,
+  kalah bila 4 petak digusur, bangunan menua (kusam/bobrok, rawat dengan koin), suara sintetis, shake, teks "+1".
+- Belum: bencana, roh lain (Tanuki, Komainu), Ema/upgrade, pilihan sesi, suara.

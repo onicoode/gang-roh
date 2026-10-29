@@ -26,4 +26,6 @@ func _process(delta: float) -> void:
 	var p = world.player
 	if _t > 0.3 and p.state == p.State.GROUND and absf(p.position.x - position.x) < 7.0 and p.coins < p.max_coins:
 		p.coins += 1
+		world.sfx.play("pickup")
+		world.pop_text(position + Vector2(0, -12), "+1", Color("ffd36a"))
 		queue_free()
