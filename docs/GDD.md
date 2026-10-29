@@ -24,6 +24,20 @@ gang tumbuh dari warung satu lantai menjadi deretan gedung bertingkat.
 ## Kontrol
 Kiri/kanan, atas/bawah (tangga), satu tombol aksi. Di HP: swipe ke arah tujuan lalu tahan (di mana saja kecuali UI), sentuh-tahan di tempat/ketuk = aksi; mendukung portrait dan landscape.
 
+## Rencana v0.4: yōkai kesialan & pasukan roh
+- **Siang**: developer (ancaman ekonomi) — pasang papan DIJUAL di petak kosong/bobrok; usir dengan Doa, cabut papan.
+- **Malam**: yōkai kesialan (Kegare) datang dari ujung gang dan dari sarang (bangunan bobrok/tergusur):
+  - Gaki (hantu lapar): bergerombol, lemah, memakan Doa di jalan.
+  - Binbōgami (dewa kemiskinan): menempel di bangunan, menyedot penghasilan, mempercepat bobrok.
+  - Noppera-bō: menakuti penghuni → lantai berkurang.
+  - Oni (bos, tiap beberapa bulan): kuat, merusak pagar & bangunan.
+- **Pasukan roh**:
+  - Tsukumogami (Karakasa payung, Chōchin lentera, Bakezōri sandal) lahir dari bangunan terawat;
+    jumlah ∝ lantai. Bangun & rawat = tambah pasukan.
+  - Kuil bisa di-upgrade (Doa) memanggil roh: Kitsune-bi (serang jarak jauh), Komainu (penjaga gerbang), Kodama (penyembuh).
+  - Kucing: Lambaian Rezeki mengusir yōkai lemah.
+- Yōkai punya HP; dikalahkan → menjatuhkan Doa.
+
 ## Roh penjaga (dipilih di awal sesi)
 | Roh | Fokus | Pasif | Unik |
 |---|---|---|---|
